@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - SmartTo-DoList</title>
+    <link rel="stylesheet" href="/static/style/account.css">
+</head>
+<body>
+    <header>
+        <h1>SmartTo-DoList</h1>
+        <nav>
+            <a href="/main">Home</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+    <hr>
+    <main>
+        <section id="user-info">
+            <h2>Личный кабинет</h2>
+            <div class="profile-card">
+                <p><strong>Имя пользователя:</strong> <span id="display-username">User</span></p>
+                <p><strong>Email:</strong> <span id="display-email">user@example.com</span></p>
+            </div>
+        </section>
+
+        <section id="account-actions">
+            <h3>Настройки</h3>
+            <button id="edit-profile-btn">Редактировать профиль</button>
+            <button id="change-password-btn">Изменить пароль</button>
+            <button id="sync-telegram-btn">Привязать Telegram</button>
+        </section>
+
+        <section id="user-stats">
+            <h3>Ваша статистика</h3>
+            <ul>
+                <li>Выполнено задач: <span id="completed-tasks">0</span></li>
+                <li>Активных напоминаний: <span id="active-reminders">0</span></li>
+            </ul>
+        </section>
+    </main>
+    <script src="../static/js/account.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Code Email</title>
+</head>
+<body>
+    <h1>Registration Code Sent</h1>
+    <p>A registration code has been sent to your email address. Please check your inbox and enter the code to complete your registration.</p>
+    <form id="code_verification_form" action="/verify_code" method="post">
+        <label for="registration_code">Registration Code:</label>
+        <input type="text" id="registration_code" name="registration_code" required><br><br>
+        <input type="submit" value="Verify Code">
+</html>
