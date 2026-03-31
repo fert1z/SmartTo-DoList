@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Add Task - SmartTo-DoList</title>
+        <link rel="stylesheet" href="/static/css/addtask.css">
+    </head>
+    <body>
+        <h1>Добавить новое напоминание</h1>
+        <form id="add-task-form">
+            <label for="task-title">Название задачи:</label>
+            <input type="text" id="task-title" name="task-title" required>
+
+            <label for="task-description">Описание задачи:</label>
+            <textarea id="task-description" name="task-description"></textarea>
+
+            <label for="task-datetime">Дата и время напоминания:</label>
+            <input type="datetime-local" id="task-datetime" name="task-datetime" required>
+
+            <button type="submit">Добавить напоминание</button>
+        </form>
+        <form id="add-voice-task-form">
+            <label for="voice-task">Голосовое напоминание:</label>
+            <input type="button" id="voice-task" name="voice-task" value="Записать голосовое напоминание">
+        </form>
+        <script src="/static/js/addtask.js"></script>
+        
+    </body>
+</html>

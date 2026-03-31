@@ -1,5 +1,5 @@
 function validForm(event) {
-    return confirmPasswords(event) && UsernameValidation(event) && validatepassword(event);
+    return confirmPasswords(event) && UsernameValidation(event) && validatepassword(event) && valideEmail(event);
 }
 
 
@@ -40,6 +40,17 @@ function validatepassword(event) {
 
 function valideEmail(event) {
     var email = document.querySelector("#email").value;
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+        alert("Please enter a valid email address!");
+        if (event) {
+            event.preventDefault();
+        }
+        return false;
+    }
+    
+    return true;
 }
 
 

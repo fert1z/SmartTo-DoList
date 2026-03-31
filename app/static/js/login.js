@@ -7,6 +7,16 @@ function validLogin(event) {
 
 function validatePassword(event) {
     var password = document.querySelector("#password").value;
+    
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        if (event) {
+            event.preventDefault();
+        }
+        return false;
+    }
+    
+    return true;
 }
 
 function validateUsername(event) {

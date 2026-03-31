@@ -1,0 +1,67 @@
+/* Settings Styles */
+.setting-group {
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #4ea851;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #333;
+    font-size: 16px;
+}
+
+.setting-group select,
+.setting-group input[type="email"],
+.setting-group input[type="checkbox"] {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.setting-group select {
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+.setting-group input[type="email"] {
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+.setting-group input[type="checkbox"] {
+    margin-right: 10px;
+    width: auto;
+    cursor: pointer;
+}
+
+.setting-group input[type="checkbox"] + label {
+    display: inline;
+    margin: 0;
+    cursor: pointer;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px 30px;
+    background-color: #4ea851;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}

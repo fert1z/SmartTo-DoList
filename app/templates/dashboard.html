@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SmartTo-DoList</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <h1>SmartTo-DoList</h1>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/logout">Logout</a>
+    </nav>
+    <hr>
+    <a href="/addtask">➕ Создай напоминание</a>
+    <form id="search-form">
+        <input type="text" id="search-input" placeholder="Поиск задач...">
+        <button type="submit">🔍</button>
+    </form> 
+    <form id="task-board-form">
+        <div id="task-board">
+            <!-- Здесь будут отображаться задачи -->
+        </div>
+    </form>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
