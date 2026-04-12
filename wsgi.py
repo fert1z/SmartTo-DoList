@@ -3,6 +3,14 @@ WSGI entry point для приложения SmartTo-DoList
 Используется для запуска с Gunicorn или другими WSGI серверами
 """
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / '.env')
+except ImportError:
+    pass
+
 from app import create_app, db, init_db
 
 # Создаем приложение

@@ -1,0 +1,102 @@
+/* Главная страница */
+main {
+    max-width: 960px;
+}
+
+#hero {
+    text-align: center;
+    padding: 2.5rem 1rem 2rem;
+    background: linear-gradient(180deg, #f3e5f5 0%, #fff 100%);
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    border: 1px solid #e1bee7;
+}
+
+#hero h2 {
+    font-size: clamp(1.35rem, 4vw, 1.85rem);
+    color: #4527a0;
+    margin: 0 0 1rem;
+    border: none;
+    padding: 0;
+    line-height: 1.35;
+}
+
+#hero p {
+    color: #5e35b1;
+    max-width: 36rem;
+    margin: 0 auto 1.5rem;
+    font-size: 1.05rem;
+    line-height: 1.55;
+}
+
+#hero .button,
+#try-it-now-btn {
+    display: inline-block;
+    padding: 0.85rem 1.75rem;
+    background: linear-gradient(135deg, #5c6bc0 0%, #7e57c2 100%);
+    color: #fff !important;
+    text-decoration: none !important;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 18px rgba(94, 53, 177, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#hero .button:hover,
+#try-it-now-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(94, 53, 177, 0.45);
+}
+
+#features,
+#audience {
+    margin-bottom: 2rem;
+}
+
+#features h3,
+#audience h3 {
+    font-size: 1.2rem;
+    color: #3949ab;
+    margin-bottom: 1rem;
+}
+
+#list_func,
+#list_fihe,
+#list_audience {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.65rem;
+}
+
+#list_func li,
+#list_fihe li,
+#list_audience li {
+    background: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #7e57c2;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 640px) {
+    #features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    #features h3 {
+        grid-column: 1 / -1;
+    }
+}
+
+body > main > hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+    margin: 1.5rem 0;
+}

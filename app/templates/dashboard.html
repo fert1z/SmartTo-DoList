@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SmartTo-DoList</title>
+    <title>Задачи — SmartTo-DoList</title>
     <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
@@ -20,18 +20,31 @@
             </nav>
         </div>
     </header>
-    <hr>
-    <div class="task-container">
-    <form id="search-form">
-        <input type="text" id="search-input" placeholder="Поиск задач...">
-        <button type="submit">🔍</button>
-    </form> 
-    <form id="task-board-form">
-        <div id="task-board">
-            <!-- Здесь будут отображаться задачи -->
+
+    <main class="dashboard-main">
+        <div class="dashboard-head">
+            <h2 class="page-title">Мои задачи</h2>
+            <a href="/addtask" class="btn-primary-inline">+ Новая задача</a>
         </div>
-    </form>
-    </div>
+
+        <div class="filter-tabs" role="tablist">
+            <button type="button" class="filter-tab filter-tab--active" data-filter="active" role="tab">Активные</button>
+            <button type="button" class="filter-tab" data-filter="all" role="tab">Все</button>
+            <button type="button" class="filter-tab" data-filter="done" role="tab">Выполненные</button>
+        </div>
+
+        <form id="search-form" class="search-form" onsubmit="return false;">
+            <input type="search" id="search-input" name="q" placeholder="Поиск по названию и описанию…" autocomplete="off">
+            <button type="submit" class="search-form__btn" aria-label="Найти">🔍</button>
+        </form>
+
+        <div id="dashboard-toast" class="dashboard-toast" hidden role="status"></div>
+
+        <div class="task-container">
+            <div id="task-board" class="task-board"></div>
+        </div>
+    </main>
+
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

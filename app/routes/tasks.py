@@ -1,11 +1,24 @@
 """
 Маршруты для работы с задачами
 """
+from datetime import datetime
+
 from flask import Blueprint, render_template, request, jsonify, session
 from app.models import Task, User
 from app import db
 
 tasks_bp = Blueprint('tasks', __name__)
+
+
+def _parse_due_date(raw):
+    """Парсинг значения datetime-local или ISO; пустое — None."""
+    if not raw or not str(raw).strip():
+        return None
+    s = str(raw).strip().replace('Z', '+00:00')
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
 
 
 @tasks_bp.route('/new', methods=['GET', 'POST'])
@@ -24,11 +37,15 @@ def create_task():
         
         if not title:
             return jsonify({'error': 'Название задачи обязательно'}), 400
-        
+
+        due_dt = _parse_due_date(due_date)
+        if due_date and str(due_date).strip() and due_dt is None:
+            return jsonify({'error': 'Некорректная дата и время'}), 400
+
         task = Task(
             title=title,
             description=description,
-            due_date=due_date,
+            due_date=due_dt,
             priority=priority,
             category=category,
             user_id=user_id

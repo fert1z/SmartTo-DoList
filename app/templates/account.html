@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account - SmartTo-DoList</title>
+    <title>Профиль — SmartTo-DoList</title>
     <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/account.css">
 </head>
@@ -20,30 +20,49 @@
             </nav>
         </div>
     </header>
-    <main>
-        <section id="user-info">
-            <h2>Личный кабинет</h2>
-            <div class="profile-card">
-                <p><strong>Имя пользователя:</strong> <span id="display-username">User</span></p>
-                <p><strong>Email:</strong> <span id="display-email">user@example.com</span></p>
+
+    <main class="account-main">
+        <h2 class="account-page-title">Личный кабинет</h2>
+
+        <section class="profile-card profile-card--hero">
+            <div class="profile-avatar" aria-hidden="true">{{ (user.username or '?')[0]|upper }}</div>
+            <div class="profile-details">
+                <p><strong>Пользователь</strong> <span id="display-username">{{ user.username }}</span></p>
+                <p><strong>Email</strong> <span id="display-email">{{ user.email }}</span></p>
+                <p class="telegram-line">
+                    <strong>Telegram</strong>
+                    {% if telegram_linked %}
+                    <span class="badge-ok">привязан</span>
+                    {% else %}
+                    <span class="badge-muted">не привязан</span>
+                    {% endif %}
+                </p>
             </div>
         </section>
 
-        <section id="account-actions">
-            <h3>Настройки</h3>
-            <button id="edit-profile-btn">Редактировать профиль</button>
-            <button id="change-password-btn">Изменить пароль</button>
-            <button id="sync-telegram-btn">Привязать Telegram</button>
+        <section class="account-actions">
+            <h3>Быстрые действия</h3>
+            <div class="action-buttons">
+                <a href="/dashboard" class="action-btn action-btn--primary">Мои задачи</a>
+                <a href="/addtask" class="action-btn action-btn--primary">Новая задача</a>
+                <a href="/account/settings" class="action-btn">Настройки</a>
+                <a href="/auth/forgot-password" class="action-btn action-btn--ghost">Забыли пароль?</a>
+            </div>
         </section>
 
-        <section id="user-stats">
-            <h3>Ваша статистика</h3>
-            <ul>
-                <li>Выполнено задач: <span id="completed-tasks">0</span></li>
-                <li>Активных напоминаний: <span id="active-reminders">0</span></li>
-            </ul>
+        <section class="user-stats">
+            <h3>Статистика</h3>
+            <div class="stats-grid">
+                <div class="stat-tile">
+                    <span class="stat-value" id="completed-tasks">{{ stats.completed }}</span>
+                    <span class="stat-label">выполнено</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-value" id="active-reminders">{{ stats.active }}</span>
+                    <span class="stat-label">активных</span>
+                </div>
+            </div>
         </section>
     </main>
-    <script src="../static/js/account.js"></script>
 </body>
 </html>

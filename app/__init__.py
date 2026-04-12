@@ -55,12 +55,16 @@ def create_app(config_name=None):
         from flask import render_template
         return render_template('error500.html'), 500
     
+    with app.app_context():
+        from app import models  # noqa: F401 — регистрация моделей
+        db.create_all()
+        from app.db_schema import apply_schema_migrations
+        apply_schema_migrations(db)
+    
     return app
 
 
 def init_db():
-    """Инициализация базы данных"""
-    app = create_app()
-    with app.app_context():
-        db.create_all()
-        print("✓ База данных инициализирована")
+    """Инициализация базы данных (схема поднимается внутри create_app)."""
+    create_app()
+    print("✓ База данных инициализирована")

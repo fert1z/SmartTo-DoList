@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
+    <title>Настройки — SmartTo-DoList</title>
     <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/settings.css">
 </head>
@@ -20,28 +20,77 @@
             </nav>
         </div>
     </header>
+
+    <main class="settings-main">
+        <h1>Настройки</h1>
+
+        <div class="setting-group telegram-panel">
+            <label>Telegram-бот</label>
+            {% if telegram_linked %}
+            <p class="telegram-status telegram-status--ok">Аккаунт привязан к Telegram. Уведомления и команды доступны в боте.</p>
+            <button type="button" class="btn-secondary" id="btn-telegram-unlink">Отвязать Telegram</button>
+            {% else %}
+            <p class="telegram-hint">Сгенерируйте код, откройте бота и отправьте: <code>/link КОД</code></p>
+            <button type="button" id="btn-telegram-code">Получить код привязки</button>
+            <div id="telegram-code-box" class="telegram-code-box" hidden>
+                <p>Ваш код (действует {{ link_ttl_minutes }} мин):</p>
+                <p class="telegram-code" id="telegram-code-value"></p>
+            </div>
+            <p id="telegram-msg" class="telegram-msg" role="status"></p>
+            {% endif %}
         </div>
-    </header>
-    <h1>Настройки</h1>
-    
-    <div class=\"setting-group\">
-        <label>Тема:</label>
-        <select>
-            <option>Светлая</option>
-            <option>Тёмная</option>
-        </select>
-    </div>
-    
-    <div class="setting-group">
-        <label>Email:</label>
-        <input type="email" placeholder="Enter your email">
-    </div>
-    
-    <div class="setting-group">
-        <label>Notification:</label>
-        <input type="checkbox"> Enable notifications
-    </div>
-    
-    <button>Save Settings</button>
+
+        <div class="setting-group">
+            <label>Тема</label>
+            <select disabled>
+                <option>Светлая</option>
+                <option>Тёмная</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <label>Email</label>
+            <input type="email" value="{{ user.email if user else '' }}" placeholder="email" disabled>
+        </div>
+
+        <div class="setting-group">
+            <label><input type="checkbox" disabled> Уведомления в браузере</label>
+        </div>
+    </main>
+
+    {% if not telegram_linked %}
+    <script>
+    (function() {
+        var btn = document.getElementById('btn-telegram-code');
+        var box = document.getElementById('telegram-code-box');
+        var val = document.getElementById('telegram-code-value');
+        var msg = document.getElementById('telegram-msg');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+            msg.textContent = '';
+            fetch('/account/telegram/generate-link', { method: 'POST', headers: { 'Accept': 'application/json' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.error) { msg.textContent = data.error; return; }
+                    val.textContent = data.code;
+                    box.hidden = false;
+                })
+                .catch(function() { msg.textContent = 'Не удалось получить код'; });
+        });
+    })();
+    </script>
+    {% else %}
+    <script>
+    document.getElementById('btn-telegram-unlink').addEventListener('click', function() {
+        if (!confirm('Отвязать Telegram от этого аккаунта?')) return;
+        fetch('/account/telegram/unlink', { method: 'POST', headers: { 'Accept': 'application/json' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) location.reload();
+                else alert(data.error || 'Ошибка');
+            });
+    });
+    </script>
+    {% endif %}
 </body>
 </html>

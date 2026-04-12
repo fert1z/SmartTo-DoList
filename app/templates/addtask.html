@@ -1,43 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Add Task - SmartTo-DoList</title>
-        <link rel="stylesheet" href="/static/css/navigation.css">
-        <link rel="stylesheet" href="/static/css/addtask.css">
-    </head>
-    <body>
-        <header>
-            <div class="header-top">
-                <h1><a href="/dashboard">SmartTo-DoList</a></h1>
-                <nav>
-                    <a href="/dashboard">📊 Задачи</a>
-                    <a href="/addtask">➕ Создать</a>
-                    <a href="/account/profile">👤 Профиль</a>
-                    <a href="/account/settings">⚙️ Настройки</a>
-                    <a href="/auth/logout">🚪 Выход</a>
-                </nav>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новая задача — SmartTo-DoList</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
+    <link rel="stylesheet" href="/static/css/addtask.css">
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <h1><a href="/dashboard">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/dashboard">📊 Задачи</a>
+                <a href="/addtask">➕ Создать</a>
+                <a href="/account/profile">👤 Профиль</a>
+                <a href="/account/settings">⚙️ Настройки</a>
+                <a href="/auth/logout">🚪 Выход</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="addtask-main">
+        <div class="addtask-header">
+            <h2 class="page-title-addtask">Новая задача</h2>
+            <a href="/dashboard" class="link-back">← К списку</a>
+        </div>
+
+        <p id="addtask-message" class="addtask-message" hidden role="status"></p>
+
+        <form id="add-task-form" class="addtask-form-card">
+            <label for="task-title">Название <span class="req">*</span></label>
+            <input type="text" id="task-title" name="task-title" required maxlength="200" placeholder="Например: Купить хлеб">
+
+            <label for="task-description">Описание</label>
+            <textarea id="task-description" name="task-description" rows="4" placeholder="Детали (необязательно)"></textarea>
+
+            <div class="form-row-2">
+                <div>
+                    <label for="task-priority">Приоритет</label>
+                    <select id="task-priority" name="priority">
+                        <option value="low">Низкий</option>
+                        <option value="medium" selected>Средний</option>
+                        <option value="high">Высокий</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="task-category">Категория</label>
+                    <select id="task-category" name="category">
+                        <option value="personal">Личное</option>
+                        <option value="work">Работа</option>
+                        <option value="study">Учёба</option>
+                    </select>
+                </div>
             </div>
-        </header>
-        <h1>Добавить новое напоминание</h1>
-        <form id="add-task-form">
-            <label for="task-title">Название задачи:</label>
-            <input type="text" id="task-title" name="task-title" required>
 
-            <label for="task-description">Описание задачи:</label>
-            <textarea id="task-description" name="task-description"></textarea>
+            <label for="task-datetime">Срок (необязательно)</label>
+            <input type="datetime-local" id="task-datetime" name="task-datetime">
+            <p class="field-hint">Если не указать — задача без дедлайна.</p>
 
-            <label for="task-datetime">Дата и время напоминания:</label>
-            <input type="datetime-local" id="task-datetime" name="task-datetime" required>
-
-            <button type="submit">Добавить напоминание</button>
+            <button type="submit" class="btn-submit-task">Сохранить задачу</button>
         </form>
-        <form id="add-voice-task-form">
-            <label for="voice-task">Голосовое напоминание:</label>
-            <input type="button" id="voice-task" name="voice-task" value="Записать голосовое напоминание">
-        </form>
-        <script src="/static/js/addtask.js"></script>
-        
-    </body>
+
+        <div class="voice-card">
+            <h3>Голосовой ввод</h3>
+            <p class="field-hint">Название задачи можно продиктовать — текст попадёт в поле «Название».</p>
+            <input type="button" id="voice-task" class="btn-voice" value="🎤 Диктовать название">
+        </div>
+    </main>
+
+    <script src="/static/js/addtask.js"></script>
+</body>
 </html>
