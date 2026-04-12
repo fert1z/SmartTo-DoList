@@ -4,16 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/settings.css">
 </head>
 <body>
-    <h1>Settings</h1>
+    <header>
+        <div class="header-top">
+            <h1><a href="/dashboard">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/dashboard">📊 Задачи</a>
+                <a href="/addtask">➕ Создать</a>
+                <a href="/account/profile">👤 Профиль</a>
+                <a href="/account/settings">⚙️ Настройки</a>
+                <a href="/auth/logout">🚪 Выход</a>
+            </nav>
+        </div>
+    </header>
+        </div>
+    </header>
+    <h1>Настройки</h1>
     
-    <div class="setting-group">
-        <label>Theme:</label>
+    <div class=\"setting-group\">
+        <label>Тема:</label>
         <select>
-            <option>Light</option>
-            <option>Dark</option>
+            <option>Светлая</option>
+            <option>Тёмная</option>
         </select>
     </div>
     

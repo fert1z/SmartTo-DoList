@@ -17,35 +17,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Загрузить все задачи
 function loadTasks() {
-    const taskBoard = document.getElementById('task-board');
-    if (!taskBoard) return;
-    
-    // Пример данных задач (в реальном приложении будут из БД)
-    const tasks = [
-        {
-            id: 1,
-            title: 'Купить продукты',
-            description: 'Молоко, хлеб, яйца',
-            dueDate: '2026-04-01',
-            priority: 'high'
-        },
-        {
-            id: 2,
-            title: 'Подготовить презентацию',
-            description: 'Проект по смартным напоминаниям',
-            dueDate: '2026-04-05',
-            priority: 'medium'
-        },
-        {
-            id: 3,
-            title: 'Позвонить маме',
-            description: 'Проверить как дела',
-            dueDate: '2026-04-02',
-            priority: 'low'
-        }
-    ];
-    
-    renderTasks(tasks);
+    fetch('/tasks/list')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+                return;
+            }
+            renderTasks(data.tasks || []);
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки задач:', error);
+            // Fallback to example data
+            const tasks = [
+                {
+                    id: 1,
+                    title: 'Купить продукты',
+                    description: 'Молоко, хлеб, яйца',
+                    due_date: '2026-04-01',
+                    priority: 'high'
+                },
+                {
+                    id: 2,
+                    title: 'Подготовить презентацию',
+                    description: 'Проект по смартным напоминаниям',
+                    due_date: '2026-04-05',
+                    priority: 'medium'
+                },
+                {
+                    id: 3,
+                    title: 'Позвонить маме',
+                    description: 'Проверить как дела',
+                    due_date: '2026-04-02',
+                    priority: 'low'
+                }
+            ];
+            renderTasks(tasks);
+        });
 }
 
 // Отрисовать задачи на странице
@@ -70,7 +78,7 @@ function renderTasks(tasks) {
             <div style="border-bottom: 3px solid ${priorityColor}; padding-bottom: 10px;">
                 <h3 class="task-title">${escapeHtml(task.title)}</h3>
                 <p class="task-description">${escapeHtml(task.description || '')}</p>
-                <p class="task-date">🗓️ ${formatDate(task.dueDate)}</p>
+                <p class="task-date">🗓️ ${formatDate(task.due_date)}</p>
                 <span style="display: inline-block; background-color: ${priorityColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px;">
                     ${getPriorityLabel(task.priority)}
                 </span>

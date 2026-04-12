@@ -44,15 +44,37 @@ function handleAddTask() {
         return;
     }
     
-    // В реальном приложении: отправить на сервер
-    console.log('Новая задача:', {
-        title: title,
-        description: description,
-        datetime: datetime
+    // Отправить на сервер
+    fetch('/tasks/new', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'task-title': title,
+            'task-description': description,
+            'task-datetime': datetime
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Задача добавлена!');
+            // Очистить форму
+            document.getElementById('add-task-form').reset();
+            // Перенаправить на dashboard
+            window.location.href = '/dashboard';
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка при добавлении задачи');
     });
     
-    alert('✓ Задача успешно добавлена:\\n\\nНазвание: ' + title + '\\nДата: ' + formatDateTime(datetime));
-    
+    alert('✓ Задача успешно добавлена:\n\nНазвание: ' + title + '\nДата: ' + formatDateTime(datetime));
+
     // Очистить форму
     document.getElementById('add-task-form').reset();
 }
@@ -89,7 +111,7 @@ function startVoiceRecording() {
         // Вставить распознанный текст в поле задачи
         document.getElementById('task-title').value = transcript;
         
-        alert('Распознано: "' + transcript + '"\\n\\nВы можете отредактировать и добавить задачу.');
+        alert('Распознано: "' + transcript + '"\n\nВы можете отредактировать и добавить задачу.');
     };
     
     recognition.onerror = function(event) {

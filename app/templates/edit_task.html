@@ -4,11 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Task</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/main_page.css">
 </head>
 <body>
+    <header>
+        <div class="header-top">
+            <h1><a href="/dashboard">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/dashboard">📊 Задачи</a>
+                <a href="/addtask">➕ Создать</a>
+                <a href="/account/profile">👤 Профиль</a>
+                <a href="/account/settings">⚙️ Настройки</a>
+                <a href="/auth/logout">🚪 Выход</a>
+            </nav>
+        </div>
+    </header>
     <div class="container">
-        <h1>Edit Task</h1>
+        <h1>Редактировать задачу</h1>
         <form id="editTaskForm">
             <div class="form-group">
                 <label for="taskTitle">Task Title:</label>

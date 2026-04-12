@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>О проекте - SmartTo-DoList</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/main_page.css">
 </head>
 <body>
     <header>
-        <h1>SmartTo-DoList</h1>
-        <nav>
-            <a href="/" class="button">Главная</a>
-            <a href="/about" class="button active">О проекте</a>
-            <a href="/login" class="button">Войти</a>
-            <a href="/register" class="button primary">Регистрация</a>
-        </nav>
+        <div class="header-top">
+            <h1><a href="/">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/">Главная</a>
+                <a href="/about">О проекте</a>
+                <a href="/auth/login">Войти</a>
+                <a href="/auth/register">Регистрация</a>
+            </nav>
+        </div>
     </header>
 
     <main>
@@ -310,7 +313,7 @@
                 Присоединяйтесь к тысячам пользователей, которые вже повысили свою продуктивность с помощью SmartTo-DoList!
             </p>
             <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <a href="/register" class="button" style="background-color: #4ea851; color: white; padding: 15px 40px; font-size: 16px;">
+                <a href="/auth/register" class="button" style="background-color: #4ea851; color: white; padding: 15px 40px; font-size: 16px;">
                     Создать аккаунт
                 </a>
                 <a href="/" class="button" style="background-color: #008CBA; color: white; padding: 15px 40px; font-size: 16px;">

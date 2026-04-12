@@ -4,16 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SmartTo-DoList</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
-    <h1>SmartTo-DoList</h1>
-    <nav>
-        <a href="/">Home</a>
-        <a href="/logout">Logout</a>
-    </nav>
+    <header>
+        <div class="header-top">
+            <h1><a href="/dashboard">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/dashboard">📊 Задачи</a>
+                <a href="/addtask">➕ Создать</a>
+                <a href="/account/profile">👤 Профиль</a>
+                <a href="/account/settings">⚙️ Настройки</a>
+                <a href="/auth/logout">🚪 Выход</a>
+            </nav>
+        </div>
+    </header>
     <hr>
-    <a href="/addtask">➕ Создай напоминание</a>
+    <div class="task-container">
     <form id="search-form">
         <input type="text" id="search-input" placeholder="Поиск задач...">
         <button type="submit">🔍</button>
@@ -23,6 +31,7 @@
             <!-- Здесь будут отображаться задачи -->
         </div>
     </form>
+    </div>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

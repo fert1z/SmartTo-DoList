@@ -4,12 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
     <link rel="stylesheet" href="/static/css/login.css">
 </head>
 <body>
-    <h1>SmartTo-DoList</h1><hr>
-    <h2>Login</h2>
-    <form action="/login" method="post" onsubmit="return validLogin(event);">
+    <header>
+        <div class="header-top">
+            <h1><a href="/">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/">Главная</a>
+                <a href="/about">О проекте</a>
+                <a href="/auth/register">Регистрация</a>
+            </nav>
+        </div>
+    </header>
+    <h2>Вход в систему</h2>
+    <form action="/auth/login" method="post" onsubmit="return validLogin(event);">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required><br><br>
         <label for="password">Password:</label>
