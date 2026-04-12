@@ -1,156 +1,135 @@
-// Add Task JavaScript - Функции добавления новых задач
+// Добавление задачи через POST /tasks/new
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Обработка формы добавления задачи
+document.addEventListener('DOMContentLoaded', function () {
     const addTaskForm = document.getElementById('add-task-form');
     if (addTaskForm) {
-        addTaskForm.addEventListener('submit', function(e) {
+        addTaskForm.addEventListener('submit', function (e) {
             e.preventDefault();
             handleAddTask();
         });
     }
-    
-    // Обработка голосовой записи
+
     const voiceTaskBtn = document.getElementById('voice-task');
     if (voiceTaskBtn) {
-        voiceTaskBtn.addEventListener('click', function() {
+        voiceTaskBtn.addEventListener('click', function () {
             startVoiceRecording();
         });
     }
 });
 
-// Добавить задачу из формы
-function handleAddTask() {
-    const title = document.getElementById('task-title').value;
-    const description = document.getElementById('task-description').value;
-    const datetime = document.getElementById('task-datetime').value;
-    
-    if (!title.trim()) {
-        alert('Пожалуйста, введите название задачи!');
+function showFormMessage(text, isError) {
+    const el = document.getElementById('addtask-message');
+    if (!el) {
+        alert(text);
         return;
     }
-    
-    if (!datetime) {
-        alert('Пожалуйста, выберите дату и время!');
-        return;
-    }
-    
-    // Валидация даты
-    const selectedDate = new Date(datetime);
-    const now = new Date();
-    
-    if (selectedDate <= now) {
-        alert('Пожалуйста, выберите будущую дату и время!');
-        return;
-    }
-    
-    // В реальном приложении: отправить на сервер
-    console.log('Новая задача:', {
-        title: title,
-        description: description,
-        datetime: datetime
-    });
-    
-    alert('✓ Задача успешно добавлена:\\n\\nНазвание: ' + title + '\\nДата: ' + formatDateTime(datetime));
-    
-    // Очистить форму
-    document.getElementById('add-task-form').reset();
+    el.textContent = text;
+    el.className = 'addtask-message ' + (isError ? 'addtask-message--error' : 'addtask-message--ok');
+    el.hidden = false;
 }
 
-// Начать голосовую запись
-function startVoiceRecording() {
-    // Проверить поддержку Web Speech API
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-        alert('Ваш браузер не поддерживает распознавание речи. Используйте Chrome, Edge или Firefox последних версий.');
+function handleAddTask() {
+    const title = (document.getElementById('task-title') || {}).value || '';
+    const description = (document.getElementById('task-description') || {}).value || '';
+    const datetime = (document.getElementById('task-datetime') || {}).value || '';
+    const priorityEl = document.getElementById('task-priority');
+    const priority = priorityEl ? priorityEl.value : 'medium';
+    const categoryEl = document.getElementById('task-category');
+    const category = categoryEl ? categoryEl.value : 'personal';
+
+    if (!title.trim()) {
+        showFormMessage('Введите название задачи.', true);
         return;
     }
-    
-    const recognition = new SpeechRecognition();
+
+    if (datetime) {
+        const selected = new Date(datetime);
+        const now = new Date();
+        if (!isNaN(selected.getTime()) && selected <= now) {
+            showFormMessage('Укажите дату и время в будущем или оставьте поле пустым.', true);
+            return;
+        }
+    }
+
+    const params = new URLSearchParams({
+        'task-title': title.trim(),
+        'task-description': description,
+        priority: priority,
+        category: category,
+    });
+    if (datetime) {
+        params.set('task-datetime', datetime);
+    }
+
+    fetch('/tasks/new', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params,
+    })
+        .then(function (response) {
+            if (response.status === 401) {
+                window.location.href = '/auth/login';
+                return null;
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (!data) return;
+            if (data.success) {
+                showFormMessage('Задача сохранена. Переход на список…', false);
+                setTimeout(function () {
+                    window.location.href = '/dashboard';
+                }, 600);
+                return;
+            }
+            showFormMessage(data.error || 'Не удалось сохранить задачу', true);
+        })
+        .catch(function (err) {
+            console.error(err);
+            showFormMessage('Ошибка сети. Попробуйте ещё раз.', true);
+        });
+}
+
+function startVoiceRecording() {
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        showFormMessage('Браузер не поддерживает распознавание речи. Используйте Chrome или Edge.', true);
+        return;
+    }
+
+    var recognition = new SpeechRecognition();
     recognition.lang = 'ru-RU';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    
-    const btn = document.getElementById('voice-task');
-    const originalText = btn.value;
-    
-    btn.value = '🎤 Слушаю... (говорите)';
+
+    var btn = document.getElementById('voice-task');
+    var originalText = btn.value;
+    btn.value = '🎤 Слушаю…';
     btn.disabled = true;
-    
-    recognition.onstart = function() {
-        console.log('Запись началась...');
+
+    recognition.onresult = function (event) {
+        var transcript = event.results[0][0].transcript;
+        var titleInput = document.getElementById('task-title');
+        if (titleInput) titleInput.value = transcript;
+        showFormMessage('Текст вставлен в название. При необходимости отредактируйте и нажмите «Сохранить».', false);
     };
-    
-    recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        console.log('Распознано:', transcript);
-        
-        // Вставить распознанный текст в поле задачи
-        document.getElementById('task-title').value = transcript;
-        
-        alert('Распознано: "' + transcript + '"\\n\\nВы можете отредактировать и добавить задачу.');
+
+    recognition.onerror = function (event) {
+        showFormMessage('Ошибка микрофона: ' + event.error, true);
     };
-    
-    recognition.onerror = function(event) {
-        console.error('Ошибка распознавания:', event.error);
-        alert('Ошибка при распознавании речи: ' + event.error);
-    };
-    
-    recognition.onend = function() {
+
+    recognition.onend = function () {
         btn.value = originalText;
         btn.disabled = false;
     };
-    
+
     try {
         recognition.start();
     } catch (e) {
-        console.error('Ошибка при запуске распознавания:', e);
         btn.value = originalText;
         btn.disabled = false;
+        showFormMessage('Не удалось запустить запись.', true);
     }
-}
-
-// Функция для форматирования даты и времени
-function formatDateTime(dateTimeString) {
-    const date = new Date(dateTimeString);
-    const options = {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    return date.toLocaleDateString('ru-RU', options);
-}
-
-// Парсинг естественного языка для сроков (примеры)
-function parseNaturalDatetime(text) {
-    const today = new Date();
-    const patterns = {
-        'завтра': () => {
-            const d = new Date(today);
-            d.setDate(d.getDate() + 1);
-            return d;
-        },
-        'на следующей неделе': () => {
-            const d = new Date(today);
-            d.setDate(d.getDate() + 7);
-            return d;
-        },
-        'через (\\d+) дн': (match) => {
-            const days = parseInt(match[1]);
-            const d = new Date(today);
-            d.setDate(d.getDate() + days);
-            return d;
-        }
-    };
-    
-    for (let pattern in patterns) {
-        if (text.toLowerCase().includes(pattern)) {
-            return patterns[pattern]();
-        }
-    }
-    
-    return null;
 }

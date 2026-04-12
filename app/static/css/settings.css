@@ -1,4 +1,62 @@
 /* Settings Styles */
+.settings-main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 3rem;
+}
+
+.telegram-panel code {
+    background: #eee;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.telegram-status {
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.telegram-status--ok {
+    color: #2e7d32;
+}
+
+.telegram-hint {
+    margin: 0 0 12px;
+    line-height: 1.5;
+    color: #444;
+}
+
+.telegram-code-box {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f0f7f1;
+    border-radius: 8px;
+    border: 1px solid #c8e6c9;
+}
+
+.telegram-code {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    margin: 8px 0 0;
+    font-family: ui-monospace, monospace;
+}
+
+.telegram-msg {
+    margin-top: 10px;
+    color: #c62828;
+    min-height: 1.2em;
+}
+
+.btn-secondary {
+    margin-top: 0;
+    background-color: #757575;
+}
+
+.btn-secondary:hover {
+    background-color: #616161;
+}
+
 .setting-group {
     background-color: #f9f9f9;
     padding: 20px;

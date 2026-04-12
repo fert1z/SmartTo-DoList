@@ -4,23 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartTo-DoList - Главная</title>
-    <link rel="stylesheet" href="/static/css/main_page.css">
+    <link rel="stylesheet" href="/static/css/navigation.css">
+    <link rel="stylesheet" href="/static/css/landing.css">
 </head>
 <body>
     <header>
-        <h1>SmartTo-DoList</h1>
-        <nav>
-            <a href="/about" class="button">О проекте</a>
-            <a href="/login" id="login-btn" class="button">Войти</a>
-            <a href="/register" id="register-btn" class="button primary">Регистрация</a>
-        </nav>
+        <div class="header-top">
+            <h1><a href="/">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/">Главная</a>
+                <a href="/about">О проекте</a>
+                <a href="/auth/login">Войти</a>
+                <a href="/auth/register">Регистрация</a>
+            </nav>
+        </div>
     </header>
 
     <main>
         <section id="hero">
             <h2>Ваш умный помощник в планировании задач</h2>
             <p>SmartTo-DoList поможет вам организовать свои дела, не забыть о важных событиях и повысить продуктивность.</p>
-            <a href="/register" id="try-it-now-btn" class="button large">Попробовать сейчас!</a>
+            <a href="/auth/register" id="try-it-now-btn" class="button large">Попробовать сейчас!</a>
         </section>
 
         <hr>

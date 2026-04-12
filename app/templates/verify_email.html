@@ -4,14 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registration Code Email</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
+    <link rel="stylesheet" href="/static/css/login.css">
 </head>
 <body>
-    <h1>Registration Code Sent</h1>
-    <p>A registration code has been sent to your email address. Please check your inbox and enter the code to complete your registration.</p>
-    <form id="code_verification_form" action="/verify_code" method="post">
-        <label for="registration_code">Registration Code:</label>
+    <header>
+        <div class="header-top">
+            <h1><a href="/">SmartTo-DoList</a></h1>
+            <nav>
+                <a href="/">Главная</a>
+                <a href="/about">О проекте</a>
+                <a href="/auth/login">Вход</a>
+            </nav>
+        </div>
+    </header>
+    <h1>Проверка кода подтверждения</h1>
+    <p>Код подтверждения был отправлен на вашу электронную почту. Пожалуйста, проверьте входящие и используйте код для завершения регистрации.</p>
+    <form id="code_verification_form" action="/auth/verify_code" method="post">
+        <label for="registration_code">Код подтверждения:</label>
         <input type="text" id="registration_code" name="registration_code" required><br><br>
-        <input type="submit" value="Verify Code">
+        <input type="submit" value="Подтвердить">
     </form>
 </body>
 </html>

@@ -15,6 +15,7 @@ class User(db.Model):
     password = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    telegram_user_id = db.Column(db.BigInteger, unique=True, nullable=True, index=True)
     
     # Связи
     tasks = db.relationship('Task', backref='owner', lazy=True, cascade='all, delete-orphan')
@@ -66,3 +67,15 @@ class Task(db.Model):
         if self.due_date and self.status != 'completed':
             return datetime.utcnow() > self.due_date
         return False
+
+
+class TelegramLinkCode(db.Model):
+    """Одноразовый код привязки Telegram к аккаунту (выдаётся в веб-настройках)."""
+    __tablename__ = 'telegram_link_codes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(16), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('telegram_link_codes', lazy=True))
