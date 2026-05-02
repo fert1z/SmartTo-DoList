@@ -45,9 +45,19 @@ function handleAddTask() {
     if (datetime) {
         const selected = new Date(datetime);
         const now = new Date();
-        if (!isNaN(selected.getTime()) && selected <= now) {
+        const isParsable = !isNaN(selected.getTime());
+        if (isParsable && selected <= now) {
             showFormMessage('Укажите дату и время в будущем или оставьте поле пустым.', true);
             return;
+        }
+
+        if (!isParsable) {
+            const normalized = datetime.trim().toLowerCase();
+            const allowNatural = /^(сегодня|завтра|послезавтра|через\s+\d+\s*(дней|дня|часов|часа|минут|минуты))/i;
+            if (!allowNatural.test(normalized)) {
+                showFormMessage('Введите дату в формате ISO или фразу вроде "завтра 18:00".', true);
+                return;
+            }
         }
     }
 

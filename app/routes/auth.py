@@ -1,8 +1,13 @@
 """
 Маршруты аутентификации
 """
-from flask import Blueprint, render_template, request, redirect, url_for, session
-from app.models import User
+import secrets
+import smtplib
+from email.message import EmailMessage
+from datetime import datetime, timedelta
+
+from flask import Blueprint, render_template, request, redirect, url_for, session, current_app
+from app.models import User, PasswordResetToken
 from app import db
 
 auth_bp = Blueprint('auth', __name__)
@@ -77,12 +82,117 @@ def logout():
     return redirect(url_for('main.index'))
 
 
+def _send_email(subject, recipient, body):
+    mail_server = current_app.config.get('MAIL_SERVER')
+    mail_port = current_app.config.get('MAIL_PORT', 587)
+    mail_use_tls = current_app.config.get('MAIL_USE_TLS', True)
+    mail_username = current_app.config.get('MAIL_USERNAME')
+    mail_password = current_app.config.get('MAIL_PASSWORD')
+    mail_sender = current_app.config.get('MAIL_DEFAULT_SENDER', 'no-reply@smarttodolist.local')
+
+    if not mail_server:
+        current_app.logger.warning('Mail server is not configured. Email content:\n%s', body)
+        print('Email to', recipient)
+        print(body)
+        return
+
+    message = EmailMessage()
+    message['Subject'] = subject
+    message['From'] = mail_sender
+    message['To'] = recipient
+    message.set_content(body)
+
+    try:
+        with smtplib.SMTP(mail_server, mail_port, timeout=10) as smtp:
+            if mail_use_tls:
+                smtp.starttls()
+            if mail_username and mail_password:
+                smtp.login(mail_username, mail_password)
+            smtp.send_message(message)
+    except Exception as error:
+        current_app.logger.exception('Не удалось отправить письмо: %s', error)
+        raise
+
+
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     """Восстановление пароля"""
     if request.method == 'POST':
-        email = request.form.get('email')
-        # TODO: Реализовать отправку письма для восстановления пароля
-        return render_template('forgot_password.html', success='Письмо отправлено')
-    
+        email = (request.form.get('email') or '').strip().lower()
+        if not email:
+            return render_template('forgot_password.html', error='Введите корректный email')
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            PasswordResetToken.query.filter_by(user_id=user.id, used=False).delete()
+            token = secrets.token_urlsafe(24)
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token,
+                expires_at=datetime.utcnow() + timedelta(hours=1),
+                used=False,
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+
+            reset_link = url_for('auth.reset_password', token=token, _external=True)
+            body = (
+                f'Здравствуйте, {user.username}!\n\n'
+                'Мы получили запрос на восстановление пароля. Перейдите по ссылке, чтобы задать новый пароль:\n\n'
+                f'{reset_link}\n\n'
+                'Если вы не запрашивали сброс пароля, просто проигнорируйте это сообщение.'
+            )
+            try:
+                _send_email('Сброс пароля SmartTo-DoList', user.email, body)
+            except Exception:
+                current_app.logger.warning('Сбой отправки письма сброса пароля, но продолжим.')
+
+        return render_template(
+            'forgot_password.html',
+            success='Если указанный email зарегистрирован, на него отправлена ссылка для сброса пароля.',
+        )
+
     return render_template('forgot_password.html')
+
+
+@auth_bp.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    """Сброс пароля по токену"""
+    token = request.values.get('token', '').strip()
+    if request.method == 'GET':
+        if not token:
+            return render_template('reset_password.html', error='Неверный или просроченный токен.')
+
+        token_row = PasswordResetToken.query.filter_by(token=token, used=False).first()
+        if not token_row or token_row.expires_at < datetime.utcnow():
+            return render_template('reset_password.html', error='Токен недействителен или устарел.')
+
+        return render_template('reset_password.html', token=token)
+
+    password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not token:
+        return render_template('reset_password.html', error='Неверный или просроченный токен.')
+
+    token_row = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    if not token_row or token_row.expires_at < datetime.utcnow():
+        return render_template('reset_password.html', error='Токен недействителен или устарел.')
+
+    if not password or len(password) < 8:
+        return render_template('reset_password.html', token=token, error='Пароль должен содержать не менее 8 символов.')
+    if password != confirm_password:
+        return render_template('reset_password.html', token=token, error='Пароли не совпадают.')
+
+    user = User.query.get(token_row.user_id)
+    if not user:
+        return render_template('reset_password.html', error='Пользователь не найден.')
+
+    user.set_password(password)
+    token_row.used = True
+    db.session.commit()
+
+    return render_template(
+        'reset_password.html',
+        success='Пароль успешно сброшен. Теперь войдите с новым паролем.',
+    )

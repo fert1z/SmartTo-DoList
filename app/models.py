@@ -3,6 +3,7 @@
 """
 from app import db
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(db.Model):
@@ -24,16 +25,12 @@ class User(db.Model):
         return f'<User {self.username}>'
     
     def set_password(self, password):
-        """Устанавливает пароль (нужно добавить werkzeug.security)"""
-        # from werkzeug.security import generate_password_hash
-        # self.password = generate_password_hash(password)
-        self.password = password  # TODO: Реализовать хеширование
-    
+        """Устанавливает пароль с хешированием."""
+        self.password = generate_password_hash(password)
+
     def check_password(self, password):
-        """Проверяет пароль"""
-        # from werkzeug.security import check_password_hash
-        # return check_password_hash(self.password, password)
-        return self.password == password  # TODO: Реализовать проверку хеша
+        """Проверяет пароль по хешу."""
+        return check_password_hash(self.password, password)
 
 
 class Task(db.Model):
@@ -67,6 +64,19 @@ class Task(db.Model):
         if self.due_date and self.status != 'completed':
             return datetime.utcnow() > self.due_date
         return False
+
+
+class PasswordResetToken(db.Model):
+    """Токен для сброса пароля."""
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+
+    user = db.relationship('User', backref=db.backref('reset_tokens', lazy=True))
 
 
 class TelegramLinkCode(db.Model):

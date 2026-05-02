@@ -24,6 +24,39 @@
     <main class="settings-main">
         <h1>Настройки</h1>
 
+        {% if error %}
+        <div class="settings-alert settings-alert--error" role="alert">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="settings-alert settings-alert--success" role="status">{{ success }}</div>
+        {% endif %}
+
+        <form action="/account/edit" method="post" class="settings-form">
+            <div class="setting-group">
+                <label for="username">Имя пользователя</label>
+                <input id="username" name="username" type="text" value="{{ user.username if user else '' }}" required>
+            </div>
+            <div class="setting-group">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" value="{{ user.email if user else '' }}" required>
+            </div>
+            <div class="setting-group">
+                <label for="current_password">Текущий пароль</label>
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password">
+            </div>
+            <div class="setting-group">
+                <label for="new_password">Новый пароль</label>
+                <input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8">
+            </div>
+            <div class="setting-group">
+                <label for="confirm_password">Подтверждение пароля</label>
+                <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8">
+            </div>
+            <div class="setting-group setting-group--actions">
+                <button type="submit" class="btn-primary">Сохранить профиль</button>
+            </div>
+        </form>
+
         <div class="setting-group telegram-panel">
             <label>Telegram-бот</label>
             {% if telegram_linked %}
@@ -46,11 +79,6 @@
                 <option>Светлая</option>
                 <option>Тёмная</option>
             </select>
-        </div>
-
-        <div class="setting-group">
-            <label>Email</label>
-            <input type="email" value="{{ user.email if user else '' }}" placeholder="email" disabled>
         </div>
 
         <div class="setting-group">

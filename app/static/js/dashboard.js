@@ -34,10 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!btn) return;
             const id = parseInt(btn.getAttribute('data-task-id'), 10);
             if (!id) return;
-            if (btn.getAttribute('data-action') === 'complete') {
+            const action = btn.getAttribute('data-action');
+            if (action === 'complete') {
                 completeTask(id);
-            } else if (btn.getAttribute('data-action') === 'delete') {
+            } else if (action === 'delete') {
                 deleteTask(id);
+            } else if (action === 'edit') {
+                window.location.href = '/tasks/' + id + '/edit';
             }
         });
     }
@@ -126,13 +129,20 @@ function renderTasks(tasks) {
         }
 
         const priorityColor = getPriorityColor(task.priority);
+        const urgencyLabel = getUrgencyLabel(task);
         const actions =
             task.status === 'completed'
                 ? '<div class="task-actions"><span class="task-done-label">Выполнено</span>' +
+                  '<button type="button" class="btn-edit" data-action="edit" data-task-id="' +
+                  task.id +
+                  '">Редактировать</button>' +
                   '<button type="button" class="btn-delete" data-action="delete" data-task-id="' +
                   task.id +
                   '">Удалить</button></div>'
                 : '<div class="task-actions">' +
+                  '<button type="button" class="btn-edit" data-action="edit" data-task-id="' +
+                  task.id +
+                  '">Редактировать</button>' +
                   '<button type="button" class="btn-complete" data-action="complete" data-task-id="' +
                   task.id +
                   '">Выполнено</button>' +
@@ -159,6 +169,7 @@ function renderTasks(tasks) {
             '">' +
             getPriorityLabel(task.priority) +
             '</span>' +
+            (urgencyLabel ? '<span class="task-urgency-label">' + urgencyLabel + '</span>' : '') +
             '</p>' +
             actions +
             '</div>';
@@ -247,6 +258,22 @@ function getPriorityLabel(priority) {
         default:
             return '—';
     }
+}
+
+function getUrgencyLabel(task) {
+    if (task.status === 'completed') {
+        return '';
+    }
+    if (task.urgency === 'overdue') {
+        return '⛔ Просрочено';
+    }
+    if (task.urgency === 'imminent') {
+        return '⚠️ Срочно';
+    }
+    if (task.urgency === 'soon') {
+        return '🔔 Скоро';
+    }
+    return '';
 }
 
 function formatDate(dateString) {

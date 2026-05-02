@@ -102,7 +102,82 @@ def edit_profile():
     """Редактирование профиля"""
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({'error': 'Не авторизован'}), 401
+        return redirect(url_for('auth.login'))
 
-    # TODO: Реализовать редактирование профиля
-    return jsonify({'success': True})
+    user = User.query.get(user_id)
+    if not user:
+        session.clear()
+        return redirect(url_for('auth.login'))
+
+    username = (request.form.get('username') or '').strip()
+    email = (request.form.get('email') or '').strip().lower()
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not username or not email:
+        return render_template(
+            'settings.html',
+            user=user,
+            telegram_linked=bool(user.telegram_user_id),
+            link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+            error='Имя пользователя и email обязательны.',
+        )
+
+    if User.query.filter(User.username == username, User.id != user.id).first():
+        return render_template(
+            'settings.html',
+            user=user,
+            telegram_linked=bool(user.telegram_user_id),
+            link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+            error='Имя пользователя уже занято.',
+        )
+
+    if User.query.filter(User.email == email, User.id != user.id).first():
+        return render_template(
+            'settings.html',
+            user=user,
+            telegram_linked=bool(user.telegram_user_id),
+            link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+            error='Email уже используется другим аккаунтом.',
+        )
+
+    if new_password or confirm_password:
+        if not current_password or not user.check_password(current_password):
+            return render_template(
+                'settings.html',
+                user=user,
+                telegram_linked=bool(user.telegram_user_id),
+                link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+                error='Введите текущий пароль для изменения пароля.',
+            )
+        if new_password != confirm_password:
+            return render_template(
+                'settings.html',
+                user=user,
+                telegram_linked=bool(user.telegram_user_id),
+                link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+                error='Новый пароль и подтверждение не совпадают.',
+            )
+        if len(new_password) < 8:
+            return render_template(
+                'settings.html',
+                user=user,
+                telegram_linked=bool(user.telegram_user_id),
+                link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+                error='Пароль должен содержать не менее 8 символов.',
+            )
+        user.set_password(new_password)
+
+    user.username = username
+    user.email = email
+    db.session.commit()
+    session['username'] = user.username
+
+    return render_template(
+        'settings.html',
+        user=user,
+        telegram_linked=bool(user.telegram_user_id),
+        link_ttl_minutes=LINK_CODE_TTL_MINUTES,
+        success='Профиль обновлён успешно.',
+    )

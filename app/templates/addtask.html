@@ -55,9 +55,9 @@
                 </div>
             </div>
 
-            <label for="task-datetime">Срок (необязательно)</label>
-            <input type="datetime-local" id="task-datetime" name="task-datetime">
-            <p class="field-hint">Если не указать — задача без дедлайна.</p>
+            <label for="task-datetime">Срок (необязательно, можно в свободной форме)</label>
+            <input type="text" id="task-datetime" name="task-datetime" placeholder="Например: завтра 18:00 или 2026-06-30T18:00">
+            <p class="field-hint">Если не указать — задача без дедлайна. Поддерживается «завтра», «послезавтра», «через 3 дня».</p>
 
             <button type="submit" class="btn-submit-task">Сохранить задачу</button>
         </form>

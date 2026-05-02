@@ -82,6 +82,7 @@ def register_handlers() -> telebot.TeleBot:
                 '/help — все команды\n'
                 '/link КОД — привязать аккаунт (код в веб-настройках)\n'
                 '/tasks — список задач\n'
+                '/remind — напомнить о ближайших задачах\n'
                 '/add текст — новая задача\n'
                 '/done НОМЕР — отметить выполненной\n'
                 '/del НОМЕР — удалить\n'
@@ -97,6 +98,7 @@ def register_handlers() -> telebot.TeleBot:
                 '<b>Команды</b>\n'
                 '/link <code>КОД</code> — связать Telegram с аккаунтом сайта\n'
                 '/tasks — показать активные задачи (кнопки ниже сообщения)\n'
+                '/remind — напомнить о ближайших задачах\n'
                 '/add <i>название</i> — добавить задачу (или /add и затем текст сообщением)\n'
                 '/done <i>id</i> — выполнить задачу по номеру из списка /tasks\n'
                 '/del <i>id</i> — удалить задачу\n'
@@ -238,6 +240,34 @@ def register_handlers() -> telebot.TeleBot:
             if not user:
                 return
             _send_task_page(message.chat.id, user, 0)
+
+    @b.message_handler(commands=['remind'])
+    def cmd_remind(message):
+        _clear_pending(message.from_user.id)
+        with get_app().app_context():
+            user = _require_user(message)
+            if not user:
+                return
+            now = datetime.utcnow()
+            upcoming = (
+                Task.query.filter_by(user_id=user.id)
+                .filter(Task.status != 'completed')
+                .filter(Task.due_date != None)
+                .order_by(Task.due_date.asc())
+                .limit(10)
+                .all()
+            )
+            lines = []
+            for task in upcoming:
+                if task.due_date:
+                    delta = task.due_date - now
+                    status = '⛔ Просрочено' if task.is_overdue() else '⚠️ Скоро' if delta.total_seconds() <= 86400 else '⏳'
+                    date_str = task.due_date.strftime('%d.%m %H:%M')
+                    lines.append(f'{status} <b>#{task.id}</b> {html.escape(task.title or "")} — {date_str}')
+            if not lines:
+                b.reply_to(message, 'Нет ближайших задач с датой. Добавьте задачу со сроком или используйте /tasks.')
+                return
+            b.reply_to(message, '<b>Ближайшие задачи</b>\n' + '\n'.join(lines))
 
     @b.message_handler(commands=['add'])
     def cmd_add(message):
