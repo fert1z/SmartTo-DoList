@@ -71,10 +71,16 @@ function handleAddTask() {
         params.set('task-datetime', datetime);
     }
 
+    // Получаем CSRF токен из мета-тега или скрытого поля (нужно добавить в HTML)
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
     fetch('/tasks/new', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
         body: params,
     })
         .then(function (response) {

@@ -30,9 +30,17 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'no-reply@smarttodolist.local')
     
+    # ИИ функции (опционально)
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
     # Пагинация
     ITEMS_PER_PAGE = 10
-    
+
+    # Планировщик напоминаний
+    SCHEDULER_ENABLED = True
+    REMINDER_INTERVAL_MINUTES = 5
+    REMINDER_LOOKAHEAD_MINUTES = 15
+
     # Максимальный размер файла (5MB)
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 

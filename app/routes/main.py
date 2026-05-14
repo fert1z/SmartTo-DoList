@@ -2,7 +2,6 @@
 Основные маршруты приложения
 """
 from flask import Blueprint, render_template, request, session, redirect, url_for
-from app.routes.tasks import create_task, list_tasks, task_detail
 
 main_bp = Blueprint('main', __name__)
 
@@ -33,15 +32,3 @@ def addtask():
     if not session.get('user_id'):
         return redirect(url_for('auth.login'))
     return render_template('addtask.html')
-
-
-@main_bp.route('/api/tasks', methods=['GET', 'POST'])
-def api_tasks():
-    if request.method == 'POST':
-        return create_task()
-    return list_tasks()
-
-
-@main_bp.route('/api/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
-def api_task_detail(task_id):
-    return task_detail(task_id)

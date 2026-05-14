@@ -14,7 +14,6 @@ def apply_schema_migrations(db):
             col_type = 'BIGINT' if dialect != 'sqlite' else 'INTEGER'
             with bind.begin() as conn:
                 conn.execute(text(f'ALTER TABLE users ADD COLUMN telegram_user_id {col_type}'))
-            # Уникальность для старых БД без этой колонки (новые создаются из модели)
             with bind.begin() as conn:
                 conn.execute(
                     text(
@@ -22,3 +21,17 @@ def apply_schema_migrations(db):
                         'ON users (telegram_user_id)'
                     )
                 )
+        if 'timezone' not in cols:
+            with bind.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN timezone VARCHAR(32) DEFAULT 'UTC'"))
+
+    if 'tasks' in tables:
+        cols = {c['name'] for c in inspector.get_columns('tasks')}
+        if 'notified_at' not in cols:
+            col_type = 'TIMESTAMP WITH TIME ZONE' if dialect != 'sqlite' else 'TIMESTAMP'
+            with bind.begin() as conn:
+                conn.execute(text(f'ALTER TABLE tasks ADD COLUMN notified_at {col_type}'))
+        if 'completed_at' not in cols:
+            col_type = 'TIMESTAMP WITH TIME ZONE' if dialect != 'sqlite' else 'TIMESTAMP'
+            with bind.begin() as conn:
+                conn.execute(text(f'ALTER TABLE tasks ADD COLUMN completed_at {col_type}'))

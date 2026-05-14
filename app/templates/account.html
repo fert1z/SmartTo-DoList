@@ -1,27 +1,13 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Профиль — SmartTo-DoList</title>
-    <link rel="stylesheet" href="/static/css/navigation.css">
-    <link rel="stylesheet" href="/static/css/account.css">
-</head>
-<body>
-    <header>
-        <div class="header-top">
-            <h1><a href="/dashboard">SmartTo-DoList</a></h1>
-            <nav>
-                <a href="/dashboard">📊 Задачи</a>
-                <a href="/addtask">➕ Создать</a>
-                <a href="/account/profile">👤 Профиль</a>
-                <a href="/account/settings">⚙️ Настройки</a>
-                <a href="/auth/logout">🚪 Выход</a>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
 
-    <main class="account-main">
+{% block title %}Профиль — SmartTo-DoList{% endblock %}
+
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/account.css">
+{% endblock %}
+
+{% block content %}
+<main class="account-main">
         <h2 class="account-page-title">Личный кабинет</h2>
 
         <section class="profile-card profile-card--hero">
@@ -64,5 +50,4 @@
             </div>
         </section>
     </main>
-</body>
-</html>
+{% endblock %}

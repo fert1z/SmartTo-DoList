@@ -1,48 +1,39 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация — SmartTo-DoList</title>
-    <link rel="stylesheet" href="/static/css/navigation.css">
-    <link rel="stylesheet" href="/static/css/login.css">
-</head>
-<body>
-    <header>
-        <div class="header-top">
-            <h1><a href="/">SmartTo-DoList</a></h1>
-            <nav>
-                <a href="/">Главная</a>
-                <a href="/about">О проекте</a>
-                <a href="/auth/login">Вход</a>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
 
-    <main class="auth-main">
-        <div class="auth-card auth-card--wide">
-            <h2 class="auth-title">Регистрация</h2>
-            {% if error %}
-            <p class="auth-alert auth-alert--error" role="alert">{{ error }}</p>
-            {% endif %}
-            <form id="registration_form" action="/auth/register" method="post" class="auth-form" onsubmit="return validForm(event);">
-                <label for="username">Имя пользователя</label>
-                <input type="text" id="username" name="username" required autocomplete="username" minlength="3">
+{% block title %}Регистрация — SmartTo-DoList{% endblock %}
 
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required autocomplete="email">
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/login.css">
+{% endblock %}
 
-                <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8">
+{% block content %}
+<main class="auth-main">
+    <div class="auth-card auth-card--wide">
+        <h2 class="auth-title">Регистрация</h2>
+        {% if error %}
+        <p class="auth-alert auth-alert--error" role="alert">{{ error }}</p>
+        {% endif %}
+        <form id="registration_form" action="/auth/register" method="post" class="auth-form" onsubmit="return validForm(event);">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="username">Имя пользователя</label>
+            <input type="text" id="username" name="username" required autocomplete="username" minlength="3">
 
-                <label for="confirm_password">Повтор пароля</label>
-                <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password" minlength="8">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
 
-                <button type="submit" class="auth-submit">Создать аккаунт</button>
-            </form>
-            <p class="auth-footer">Уже есть аккаунт? <a href="/auth/login">Войти</a></p>
-        </div>
-    </main>
-    <script src="/static/js/registration.js"></script>
-</body>
-</html>
+            <label for="password">Пароль</label>
+            <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8">
+
+            <label for="confirm_password">Повтор пароля</label>
+            <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password" minlength="8">
+
+            <button type="submit" class="auth-submit">Создать аккаунт</button>
+        </form>
+        <p class="auth-footer">Уже есть аккаунт? <a href="/auth/login">Войти</a></p>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/registration.js"></script>
+{% endblock %}

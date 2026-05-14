@@ -5,16 +5,19 @@
 from __future__ import annotations
 
 import html
+import io
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 import telebot
 from telebot import types
 
 from app import create_app, db
 from app.models import Task, TelegramLinkCode, User
+from app.utils import parse_due_date, format_datetime_for_user, suggest_task_priority, infer_task_category
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +37,7 @@ def _clear_pending(uid: int):
 def get_app():
     global _app
     if _app is None:
-        _app = create_app()
+        _app = create_app(scheduler_enabled=False)
     return _app
 
 
@@ -64,8 +67,42 @@ def _require_user(message) -> User | None:
     return None
 
 
+def _get_user_timezone(user: User) -> str:
+    try:
+        return user.timezone or 'UTC'
+    except Exception:
+        return 'UTC'
+
+
+def _format_task_due(task: Task, user: User) -> str:
+    if not task.due_date:
+        return 'без срока'
+    return format_datetime_for_user(task.due_date, _get_user_timezone(user))
+
+
+def _recognize_voice_text(file_bytes: bytes) -> str | None:
+    try:
+        from pydub import AudioSegment
+        import speech_recognition as sr
+    except ImportError:
+        return None
+
+    try:
+        audio = AudioSegment.from_file(io.BytesIO(file_bytes), format='ogg')
+        audio = audio.set_channels(1).set_frame_rate(16000)
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format='wav')
+        wav_io.seek(0)
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_io) as source:
+            audio_data = recognizer.record(source)
+        return recognizer.recognize_google(audio_data, language='ru-RU')
+    except Exception:
+        return None
+
+
 def _cleanup_expired_codes():
-    TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.utcnow()).delete()
+    TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.now(timezone.utc)).delete()
     db.session.commit()
 
 
@@ -122,7 +159,7 @@ def register_handlers() -> telebot.TeleBot:
 
             _cleanup_expired_codes()
             row = TelegramLinkCode.query.filter_by(code=code).first()
-            if not row or row.expires_at < datetime.utcnow():
+            if not row or row.expires_at < datetime.now(timezone.utc):
                 b.reply_to(message, 'Код не найден или истёк. Сгенерируйте новый в настройках сайта.')
                 return
 
@@ -183,21 +220,18 @@ def register_handlers() -> telebot.TeleBot:
             .filter(Task.status != 'completed')
             .order_by(Task.created_at.desc())
         )
-        tasks = q.all()
-        total = len(tasks)
+        total = q.count()
         pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
         page = max(0, min(page, pages - 1))
         start = page * PAGE_SIZE
-        chunk = tasks[start : start + PAGE_SIZE]
+        chunk = q.offset(start).limit(PAGE_SIZE).all()
 
         lines = []
         for t in chunk:
-            due = ''
-            if t.due_date:
-                due = f' · до {t.due_date.strftime("%d.%m %H:%M")}'
+            due = _format_task_due(t, user)
             pr = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(t.priority or '', '⚪')
             lines.append(
-                f'{pr} <b>#{t.id}</b> {html.escape(t.title or "")}{html.escape(due)}'
+                f'{pr} <b>#{t.id}</b> {html.escape(t.title or "")} — {html.escape(t.category or "личное")} — {html.escape(due)}'
             )
         if not lines:
             body = 'Нет активных задач. Добавьте: <code>/add Название</code>'
@@ -205,16 +239,19 @@ def register_handlers() -> telebot.TeleBot:
             body = '\n'.join(lines) + f'\n\nСтр. {page + 1}/{pages} · всего активных: {total}'
 
         kb = types.InlineKeyboardMarkup(row_width=3)
-        buttons = []
         for t in chunk:
-            buttons.append(
-                types.InlineKeyboardButton(text=f'✓{t.id}', callback_data=f'd:{t.id}')
+            kb.row(
+                types.InlineKeyboardButton(text=f'✓{t.id}', callback_data=f'd:{t.id}'),
+                types.InlineKeyboardButton(text=f'✕{t.id}', callback_data=f'x:{t.id}'),
+                types.InlineKeyboardButton(text=f'⚡', callback_data=f'pr:{t.id}:high'),
+                types.InlineKeyboardButton(text=f'🟡', callback_data=f'pr:{t.id}:medium'),
+                types.InlineKeyboardButton(text=f'🟢', callback_data=f'pr:{t.id}:low')
             )
-            buttons.append(
-                types.InlineKeyboardButton(text=f'✕{t.id}', callback_data=f'x:{t.id}')
+            kb.row(
+                types.InlineKeyboardButton(text=f'W{t.id}', callback_data=f'cat:{t.id}:work'),
+                types.InlineKeyboardButton(text=f'S{t.id}', callback_data=f'cat:{t.id}:study'),
+                types.InlineKeyboardButton(text=f'P{t.id}', callback_data=f'cat:{t.id}:personal'),
             )
-        if buttons:
-            kb.add(*buttons)
         nav_row = []
         if page > 0:
             nav_row.append(types.InlineKeyboardButton('◀', callback_data=f'p:{page - 1}'))
@@ -248,7 +285,7 @@ def register_handlers() -> telebot.TeleBot:
             user = _require_user(message)
             if not user:
                 return
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             upcoming = (
                 Task.query.filter_by(user_id=user.id)
                 .filter(Task.status != 'completed')
@@ -260,9 +297,10 @@ def register_handlers() -> telebot.TeleBot:
             lines = []
             for task in upcoming:
                 if task.due_date:
-                    delta = task.due_date - now
+                    due_dt = task.due_date if task.due_date.tzinfo else task.due_date.replace(tzinfo=timezone.utc)
+                    delta = due_dt - now
                     status = '⛔ Просрочено' if task.is_overdue() else '⚠️ Скоро' if delta.total_seconds() <= 86400 else '⏳'
-                    date_str = task.due_date.strftime('%d.%m %H:%M')
+                    date_str = _format_task_due(task, user)
                     lines.append(f'{status} <b>#{task.id}</b> {html.escape(task.title or "")} — {date_str}')
             if not lines:
                 b.reply_to(message, 'Нет ближайших задач с датой. Добавьте задачу со сроком или используйте /tasks.')
@@ -283,11 +321,28 @@ def register_handlers() -> telebot.TeleBot:
                 _pending_add_title[message.from_user.id] = True
                 b.reply_to(message, 'Введите название задачи одним сообщением (до 200 символов):')
                 return
-            title = parts[1].strip()[:200]
-            task = Task(title=title, user_id=user.id, priority='medium')
+
+            raw_text = parts[1].strip()
+            due_dt = None
+            title = raw_text
+            if '|' in raw_text:
+                title_candidate, due_candidate = raw_text.split('|', 1)
+                title = title_candidate.strip()[:200]
+                due_dt = parse_due_date(due_candidate.strip(), _get_user_timezone(user))
+
+            if not title:
+                b.reply_to(message, 'Пустой текст — задача не создана.')
+                return
+
+            priority = suggest_task_priority(title, None)
+            category = infer_task_category(title, None)
+            task = Task(title=title, due_date=due_dt, user_id=user.id, priority=priority, category=category)
             db.session.add(task)
             db.session.commit()
-            b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
+            response = f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}'
+            if due_dt:
+                response += f' · до {_format_task_due(task, user)}'
+            b.reply_to(message, response)
 
     @b.message_handler(commands=['done'])
     def cmd_done(message):
@@ -330,6 +385,40 @@ def register_handlers() -> telebot.TeleBot:
             db.session.commit()
             b.reply_to(message, f'Удалено: #{tid} {html.escape(title or "")}')
 
+    @b.message_handler(content_types=['voice'])
+    def handle_voice(message):
+        _clear_pending(message.from_user.id)
+        with get_app().app_context():
+            user = _require_user(message)
+            if not user:
+                return
+            if not message.voice:
+                b.reply_to(message, 'Отправьте голосовое сообщение.')
+                return
+            # Проверка размера файла (макс 10MB для предотвращения OOM)
+            if message.voice.file_size and message.voice.file_size > 10 * 1024 * 1024:
+                b.reply_to(message, 'Файл слишком большой. Максимальный размер: 10MB.')
+                return
+            try:
+                file_info = b.get_file(message.voice.file_id)
+                file_bytes = b.download_file(file_info.file_path)
+                text = _recognize_voice_text(file_bytes)
+            except Exception:
+                text = None
+            if not text:
+                b.reply_to(
+                    message,
+                    'Не удалось распознать голосовое сообщение. Убедитесь, что оно короткое и говорите ясно.',
+                )
+                return
+            title = text.strip()[:200]
+            priority = suggest_task_priority(title, None)
+            category = infer_task_category(title, None)
+            task = Task(title=title, user_id=user.id, priority=priority, category=category)
+            db.session.add(task)
+            db.session.commit()
+            b.reply_to(message, f'Задача добавлена голосом: <b>#{task.id}</b> {html.escape(title)}')
+
     @b.callback_query_handler(func=lambda c: True)
     def on_callback(call):
         _clear_pending(call.from_user.id)
@@ -345,7 +434,10 @@ def register_handlers() -> telebot.TeleBot:
             if data.startswith('p:'):
                 page = int(data.split(':')[1])
                 _send_task_page(call.message.chat.id, user, page, call.message.message_id)
-                b.answer_callback_query(call.id)
+                try:
+                    b.answer_callback_query(call.id)
+                except Exception:
+                    pass
                 return
             if data.startswith('d:'):
                 tid = int(data.split(':')[1])
@@ -353,10 +445,16 @@ def register_handlers() -> telebot.TeleBot:
                 if task:
                     task.complete()
                     db.session.commit()
-                    b.answer_callback_query(call.id, 'Готово')
+                    try:
+                        b.answer_callback_query(call.id, 'Готово')
+                    except Exception:
+                        pass
                     _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
                 else:
-                    b.answer_callback_query(call.id, 'Не найдено')
+                    try:
+                        b.answer_callback_query(call.id, 'Не найдено')
+                    except Exception:
+                        pass
                 return
             if data.startswith('x:'):
                 tid = int(data.split(':')[1])
@@ -364,12 +462,76 @@ def register_handlers() -> telebot.TeleBot:
                 if task:
                     db.session.delete(task)
                     db.session.commit()
-                    b.answer_callback_query(call.id, 'Удалено')
+                    try:
+                        b.answer_callback_query(call.id, 'Удалено')
+                    except Exception:
+                        pass
                     _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
                 else:
-                    b.answer_callback_query(call.id, 'Не найдено')
+                    try:
+                        b.answer_callback_query(call.id, 'Не найдено')
+                    except Exception:
+                        pass
                 return
-            b.answer_callback_query(call.id)
+            if data.startswith('pr:'):
+                _, tid_str, priority = data.split(':', 2)
+                tid = int(tid_str)
+                task = Task.query.filter_by(id=tid, user_id=user.id).first()
+                if task and priority in ('low', 'medium', 'high'):
+                    task.priority = priority
+                    db.session.commit()
+                    try:
+                        b.answer_callback_query(call.id, f'Приоритет обновлён: {priority}')
+                    except Exception:
+                        pass
+                    _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
+                else:
+                    try:
+                        b.answer_callback_query(call.id, 'Не найдено или неверный приоритет')
+                    except Exception:
+                        pass
+                return
+            if data.startswith('cat:'):
+                _, tid_str, category = data.split(':', 2)
+                tid = int(tid_str)
+                task = Task.query.filter_by(id=tid, user_id=user.id).first()
+                if task and category in ('personal', 'work', 'study'):
+                    task.category = category
+                    db.session.commit()
+                    try:
+                        b.answer_callback_query(call.id, f'Категория обновлена: {category}')
+                    except Exception:
+                        pass
+                    _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
+                else:
+                    try:
+                        b.answer_callback_query(call.id, 'Не найдено или неверная категория')
+                    except Exception:
+                        pass
+                return
+            if data.startswith('snooze:'):
+                _, tid_str, minutes = data.split(':', 2)
+                tid = int(tid_str)
+                task = Task.query.filter_by(id=tid, user_id=user.id).first()
+                if task:
+                    task.due_date = datetime.now(timezone.utc) + timedelta(minutes=int(minutes))
+                    task.notified_at = None # Чтобы планировщик сработал снова
+                    db.session.commit()
+                    try:
+                        b.answer_callback_query(call.id, f'Отложено на {minutes} мин')
+                    except Exception:
+                        pass
+                    b.edit_message_text(f"Задача #{tid} отложена", call.message.chat.id, call.message.message_id)
+                else:
+                    try:
+                        b.answer_callback_query(call.id, 'Задача не найдена')
+                    except Exception:
+                        pass
+                return
+            try:
+                b.answer_callback_query(call.id)
+            except Exception:
+                pass
 
     @b.message_handler(content_types=['text'], func=lambda m: m.chat.type == 'private')
     def on_plain_text(message):
@@ -385,10 +547,16 @@ def register_handlers() -> telebot.TeleBot:
             if not title:
                 b.reply_to(message, 'Пустой текст — задача не создана.')
                 return
-            task = Task(title=title, user_id=user.id, priority='medium')
+            priority = suggest_task_priority(title, None)
+            category = infer_task_category(title, None)
+            task = Task(title=title, user_id=user.id, priority=priority, category=category)
             db.session.add(task)
             db.session.commit()
             b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
+
+    @b.message_handler(func=lambda message: True)
+    def clear_pending_general(message):
+        _clear_pending(message.from_user.id)
 
     return b
 

@@ -82,12 +82,14 @@ function submitTaskUpdate(taskId) {
         due_date: datetime || '',
     };
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     fetch('/tasks/' + taskId, {
         method: 'PUT',
         credentials: 'same-origin',
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            'X-CSRFToken': csrfToken,
         },
         body: JSON.stringify(payload),
     })

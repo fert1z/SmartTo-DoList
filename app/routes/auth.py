@@ -4,11 +4,13 @@
 import secrets
 import smtplib
 from email.message import EmailMessage
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import threading
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, current_app
 from app.models import User, PasswordResetToken
 from app import db
+import re
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -23,7 +25,7 @@ def login():
         if not username or not password:
             return render_template('login.html', error='Заполните все поля')
         
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(User.username.ilike(username)).first()
         
         if user and user.check_password(password):
             session['user_id'] = user.id
@@ -51,13 +53,19 @@ def register():
         if password != confirm_password:
             return render_template('registration.html', error='Пароли не совпадают')
         
+        if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
+            return render_template('registration.html', error='Имя пользователя должно быть от 3 до 20 символов (латиница и цифры)')
+
+        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            return render_template('registration.html', error='Некорректный формат email')
+
         if len(password) < 8:
             return render_template('registration.html', error='Пароль должен быть не менее 8 символов')
         
-        if User.query.filter_by(username=username).first():
+        if User.query.filter(User.username.ilike(username)).first():
             return render_template('registration.html', error='Пользователь уже существует')
         
-        if User.query.filter_by(email=email).first():
+        if User.query.filter(User.email.ilike(email)).first():
             return render_template('registration.html', error='Email уже зарегистрирован')
         
         # Создаем нового пользователя
@@ -82,7 +90,11 @@ def logout():
     return redirect(url_for('main.index'))
 
 
-def _send_email(subject, recipient, body):
+def _send_email_async(app, subject, recipient, body):
+    with app.app_context():
+        _send_email_sync(subject, recipient, body)
+
+def _send_email_sync(subject, recipient, body):
     mail_server = current_app.config.get('MAIL_SERVER')
     mail_port = current_app.config.get('MAIL_PORT', 587)
     mail_use_tls = current_app.config.get('MAIL_USE_TLS', True)
@@ -113,6 +125,11 @@ def _send_email(subject, recipient, body):
         current_app.logger.exception('Не удалось отправить письмо: %s', error)
         raise
 
+def _send_email(subject, recipient, body):
+    """Асинхронная отправка почты, чтобы не блокировать интерфейс"""
+    app = current_app._get_current_object()
+    threading.Thread(target=_send_email_async, args=(app, subject, recipient, body)).start()
+
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -123,13 +140,14 @@ def forgot_password():
             return render_template('forgot_password.html', error='Введите корректный email')
 
         user = User.query.filter_by(email=email).first()
+        user = User.query.filter(User.email.ilike(email)).first()
         if user:
             PasswordResetToken.query.filter_by(user_id=user.id, used=False).delete()
             token = secrets.token_urlsafe(24)
             reset_token = PasswordResetToken(
                 user_id=user.id,
                 token=token,
-                expires_at=datetime.utcnow() + timedelta(hours=1),
+                expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
                 used=False,
             )
             db.session.add(reset_token)
@@ -164,7 +182,7 @@ def reset_password():
             return render_template('reset_password.html', error='Неверный или просроченный токен.')
 
         token_row = PasswordResetToken.query.filter_by(token=token, used=False).first()
-        if not token_row or token_row.expires_at < datetime.utcnow():
+        if not token_row or token_row.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             return render_template('reset_password.html', error='Токен недействителен или устарел.')
 
         return render_template('reset_password.html', token=token)
@@ -176,7 +194,7 @@ def reset_password():
         return render_template('reset_password.html', error='Неверный или просроченный токен.')
 
     token_row = PasswordResetToken.query.filter_by(token=token, used=False).first()
-    if not token_row or token_row.expires_at < datetime.utcnow():
+    if not token_row or token_row.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         return render_template('reset_password.html', error='Токен недействителен или устарел.')
 
     if not password or len(password) < 8:
