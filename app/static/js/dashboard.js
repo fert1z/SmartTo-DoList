@@ -2,6 +2,9 @@
 
 let allTasks = [];
 let currentFilter = 'active';
+let currentCategory = 'all';
+let currentQuery = '';
+let currentPage = 1;
 
 document.addEventListener('DOMContentLoaded', function () {
     loadTasks();
@@ -11,7 +14,26 @@ document.addEventListener('DOMContentLoaded', function () {
         searchForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const q = (document.getElementById('search-input') || {}).value || '';
-            applyFilterAndSearch(q.trim().toLowerCase());
+            currentQuery = q.trim();
+            currentPage = 1;
+            loadTasks();
+        });
+    }
+
+    const categorySelect = document.getElementById('category-select');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function () {
+            currentCategory = categorySelect.value;
+            currentPage = 1;
+            loadTasks();
+        });
+    }
+
+    const clearCompletedBtn = document.getElementById('clear-completed');
+    if (clearCompletedBtn) {
+        clearCompletedBtn.addEventListener('click', function () {
+            if (!confirm('Удалить все выполненные задачи?')) return;
+            clearCompletedTasks();
         });
     }
 
@@ -22,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             tab.classList.add('filter-tab--active');
             currentFilter = tab.getAttribute('data-filter') || 'active';
-            const q = (document.getElementById('search-input') || {}).value || '';
-            applyFilterAndSearch(q.trim().toLowerCase());
+            currentPage = 1;
+            loadTasks();
         });
     });
 
@@ -34,18 +56,29 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!btn) return;
             const id = parseInt(btn.getAttribute('data-task-id'), 10);
             if (!id) return;
-            if (btn.getAttribute('data-action') === 'complete') {
+            const action = btn.getAttribute('data-action');
+            if (action === 'complete') {
                 completeTask(id);
-            } else if (btn.getAttribute('data-action') === 'delete') {
+            } else if (action === 'delete') {
                 deleteTask(id);
+            } else if (action === 'edit') {
+                window.location.href = '/tasks/' + id + '/edit';
             }
         });
     }
 });
 
-function loadTasks() {
+function loadTasks(page = 1) {
     const toast = document.getElementById('dashboard-toast');
-    fetch('/tasks/list', { credentials: 'same-origin' })
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('status', currentFilter);
+    params.set('category', currentCategory);
+    if (currentQuery) {
+        params.set('q', currentQuery);
+    }
+
+    fetch('/tasks/list?' + params.toString(), { credentials: 'same-origin' })
         .then(function (response) {
             if (response.status === 401) {
                 window.location.href = '/auth/login';
@@ -59,9 +92,10 @@ function loadTasks() {
                 showToast(data.error, 'error');
                 return;
             }
-            allTasks = Array.isArray(data) ? data : data.tasks || [];
-            const q = (document.getElementById('search-input') || {}).value || '';
-            applyFilterAndSearch(q.trim().toLowerCase());
+            allTasks = data.tasks || [];
+            currentPage = data.pagination.page || page;
+            renderTasks(allTasks);
+            renderPager(data.pagination);
         })
         .catch(function (err) {
             console.error(err);
@@ -69,25 +103,38 @@ function loadTasks() {
         });
 }
 
-function applyFilterAndSearch(queryLower) {
-    let list = allTasks.slice();
-    if (currentFilter === 'active') {
-        list = list.filter(function (t) {
-            return t.status !== 'completed';
-        });
-    } else if (currentFilter === 'done') {
-        list = list.filter(function (t) {
-            return t.status === 'completed';
-        });
+function renderPager(pagination) {
+    const pager = document.getElementById('task-pager');
+    if (!pager) return;
+    pager.innerHTML = '';
+    if (!pagination || pagination.pages <= 1) {
+        return;
     }
-    if (queryLower) {
-        list = list.filter(function (t) {
-            const title = (t.title || '').toLowerCase();
-            const desc = (t.description || '').toLowerCase();
-            return title.indexOf(queryLower) !== -1 || desc.indexOf(queryLower) !== -1;
-        });
-    }
-    renderTasks(list);
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'pager-btn';
+    prevBtn.textContent = '◀ Назад';
+    prevBtn.disabled = pagination.page <= 1;
+    prevBtn.addEventListener('click', function () {
+        loadTasks(pagination.page - 1);
+    });
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'pager-btn';
+    nextBtn.textContent = 'Вперед ▶';
+    nextBtn.disabled = pagination.page >= pagination.pages;
+    nextBtn.addEventListener('click', function () {
+        loadTasks(pagination.page + 1);
+    });
+
+    const label = document.createElement('span');
+    label.className = 'pager-label';
+    label.textContent = 'Стр. ' + pagination.page + ' / ' + pagination.pages;
+
+    pager.appendChild(prevBtn);
+    pager.appendChild(label);
+    pager.appendChild(nextBtn);
 }
 
 function showToast(message, type) {
@@ -126,13 +173,20 @@ function renderTasks(tasks) {
         }
 
         const priorityColor = getPriorityColor(task.priority);
+        const urgencyLabel = getUrgencyLabel(task);
         const actions =
             task.status === 'completed'
                 ? '<div class="task-actions"><span class="task-done-label">Выполнено</span>' +
+                  '<button type="button" class="btn-edit" data-action="edit" data-task-id="' +
+                  task.id +
+                  '">Редактировать</button>' +
                   '<button type="button" class="btn-delete" data-action="delete" data-task-id="' +
                   task.id +
                   '">Удалить</button></div>'
                 : '<div class="task-actions">' +
+                  '<button type="button" class="btn-edit" data-action="edit" data-task-id="' +
+                  task.id +
+                  '">Редактировать</button>' +
                   '<button type="button" class="btn-complete" data-action="complete" data-task-id="' +
                   task.id +
                   '">Выполнено</button>' +
@@ -159,6 +213,10 @@ function renderTasks(tasks) {
             '">' +
             getPriorityLabel(task.priority) +
             '</span>' +
+            '<span class="task-category">' +
+            escapeHtml(task.category || 'Без категории') +
+            '</span>' +
+            (urgencyLabel ? '<span class="task-urgency-label">' + urgencyLabel + '</span>' : '') +
             '</p>' +
             actions +
             '</div>';
@@ -168,10 +226,16 @@ function renderTasks(tasks) {
 }
 
 function completeTask(taskId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
     fetch('/tasks/' + taskId + '/complete', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
     })
         .then(function (r) {
             if (r.status === 401) {
@@ -187,7 +251,7 @@ function completeTask(taskId) {
                 return;
             }
             showToast('Задача отмечена выполненной', 'success');
-            loadTasks();
+            loadTasks(currentPage);
         })
         .catch(function () {
             showToast('Ошибка сети', 'error');
@@ -196,11 +260,15 @@ function completeTask(taskId) {
 
 function deleteTask(taskId) {
     if (!confirm('Удалить эту задачу?')) return;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     fetch('/tasks/' + taskId, {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: {
+            Accept: 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
     })
         .then(function (r) {
             if (r.status === 401) {
@@ -216,7 +284,40 @@ function deleteTask(taskId) {
                 return;
             }
             showToast('Задача удалена', 'success');
-            loadTasks();
+            loadTasks(currentPage);
+        })
+        .catch(function () {
+            showToast('Ошибка сети', 'error');
+        });
+}
+
+function clearCompletedTasks() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+    fetch('/tasks/clear-completed', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+    })
+        .then(function (r) {
+            if (r.status === 401) {
+                window.location.href = '/auth/login';
+                return null;
+            }
+            return r.json();
+        })
+        .then(function (data) {
+            if (!data) return;
+            if (data.error) {
+                showToast(data.error, 'error');
+                return;
+            }
+            showToast('Выполненные задачи очищены', 'success');
+            loadTasks(1);
         })
         .catch(function () {
             showToast('Ошибка сети', 'error');
@@ -247,6 +348,22 @@ function getPriorityLabel(priority) {
         default:
             return '—';
     }
+}
+
+function getUrgencyLabel(task) {
+    if (task.status === 'completed') {
+        return '';
+    }
+    if (task.urgency === 'overdue') {
+        return '⛔ Просрочено';
+    }
+    if (task.urgency === 'imminent') {
+        return '⚠️ Срочно';
+    }
+    if (task.urgency === 'soon') {
+        return '🔔 Скоро';
+    }
+    return '';
 }
 
 function formatDate(dateString) {

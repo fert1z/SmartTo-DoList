@@ -1,9 +1,7 @@
 """
 Основные маршруты приложения
 """
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
-from app.models import Task
-from app import db
+from flask import Blueprint, render_template, request, session, redirect, url_for
 
 main_bp = Blueprint('main', __name__)
 

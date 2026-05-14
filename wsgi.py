@@ -12,9 +12,11 @@ except ImportError:
     pass
 
 from app import create_app, db, init_db
+from flask_migrate import Migrate
 
 # Создаем приложение
 app = create_app(config_name=os.getenv('FLASK_ENV', 'development'))
+migrate = Migrate(app, db)
 
 
 @app.shell_context_processor
@@ -26,7 +28,7 @@ def make_shell_context():
 @app.cli.command()
 def init_database():
     """Инициализация базы данных"""
-    init_db()
+    init_db(app)
 
 
 if __name__ == '__main__':
