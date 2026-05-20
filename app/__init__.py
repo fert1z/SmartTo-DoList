@@ -62,7 +62,9 @@ def create_app(config_name=None, scheduler_enabled=None):
 
     @app.context_processor
     def inject_csrf_token():
-        return {'csrf_token': generate_csrf()}
+        # В шаблонах используется вызов `csrf_token()` — нужно передавать
+        # саму функцию, чтобы шаблон мог её вызвать при рендеринге.
+        return {'csrf_token': generate_csrf}
 
     @app.after_request
     def apply_security_headers(response):

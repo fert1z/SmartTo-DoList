@@ -1,188 +1,135 @@
 # SmartTo-DoList
 
-Приложение для управления задачами и напоминаниями с поддержкой Telegram-уведомлений (привязка через одноразовый код).
+Приложение для управления задачами и напоминаниями с опциональной поддержкой Telegram-уведомлений.
 
-## 🌟 Что умеет приложение (по текущей реализации)
+Коротко: лёгкое Flask-приложение с регистрацией/логином, CRUD для задач и веб-привязкой Telegram аккаунта.
 
-- ✅ **Аутентификация**: регистрация, логин, logout
-- ✅ **Задачи**: создание, получение списка, получение/обновление/удаление, отметка выполнения
-- ✅ **Панель пользователя**: профиль и настройки
-- ✅ **Telegram интеграция** (в части веб-привязки):
-  - генерация одноразового кода привязки
-  - отвязка Telegram
-- 🔐 **Безопасная аутентификация**: пароли хранятся как hash (werkzeug)
+## Что я добавил/проверил
 
-> Примечание: в текущем репозитории **нет** реализации для:
-> - распознавания речи
-> - AI/«умных напоминаний»
-> - отправки писем (mail)
-> - отдельного API под `/api/tasks` в стиле REST (вместо этого используются `/tasks/*`)
+- Обновил инструкцию по установке и запуску
+- Добавил `LICENSE` (MIT)
+- Указал команды для инициализации БД и запуска бота
 
-## 📋 Требования
+## Требования
 
-- Python **3.8+**
-- Flask **3.x**
-- Flask-SQLAlchemy **3.x**
-- SQLite (или PostgreSQL при наличии `DATABASE_URL`)
+- Python 3.8+ (рекомендовано 3.11+)
+- SQLite (по умолчанию) или любая СУБД, поддерживаемая SQLAlchemy
+- Рекомендуется виртуальное окружение (`venv`/`.venv`)
 
-## 🚀 Установка и запуск
+## Быстрый старт (локально)
 
-### 1) Клонирование репозитория
+1) Клонируйте репозиторий:
+
 ```bash
 git clone https://github.com/fert1z/SmartTo-DoList.git
 cd SmartTo-DoList
 ```
 
-### 2) Виртуальное окружение
+2) Создайте и активируйте виртуальное окружение:
+
 ```bash
-python -m venv venv
-# macOS/Linux
-source venv/bin/activate
-# Windows
-# venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # macOS / Linux
+# .venv\\Scripts\\activate   # Windows
 ```
 
-### 3) Установка зависимостей
+3) Установите зависимости:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4) Переменные окружения
+4) Создайте файл окружения `.env` на основе `.env.example` и отредактируйте значения:
 
-Создайте `.env` в корне проекта (пример — `.env.example`):
-
-```env
-FLASK_ENV=development
-SECRET_KEY=your-super-secret-key-change-this
-
-DATABASE_URL=sqlite:///instance/users.db
-
-TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
-TELEGRAM_API_URL=https://api.telegram.org
-
-PORT=5000
-HOST=0.0.0.0
-
-# Mail-параметры в README ранее упоминались — в текущей реализации отправка писем не интегрирована.
-```
-
-### 5) Инициализация базы данных
-
-База поднимается автоматически внутри `create_app()` (в `app/__init__.py`), включая схему/миграции.
-
-Для ручной инициализации можно:
 ```bash
-flask --app wsgi.py init-database
+cp .env.example .env
+# Редактируйте .env — укажите SECRET_KEY и при необходимости TELEGRAM_BOT_TOKEN
 ```
 
-### 6) Запуск приложения
+5) Инициализируйте базу данных:
 
-Для разработки:
+```bash
+# Вариант 1 — через helper-скрипт
+python init_db.py
+
+# Вариант 2 — через CLI Flask (если хотите использовать Flask CLI)
+export FLASK_APP=wsgi.py
+flask init-database
+```
+
+6) Запустите приложение (разработка):
+
 ```bash
 python wsgi.py
 ```
 
-Для продакшена (Gunicorn):
+Или с Flask CLI:
+
+```bash
+export FLASK_APP=wsgi.py
+flask run --host=0.0.0.0 --port=5000
+```
+
+Для продакшена используйте Gunicorn:
+
 ```bash
 gunicorn wsgi:app
 ```
 
-Приложение доступно по адресу:
-- **http://localhost:5000** (по умолчанию)
+7) Запуск Telegram-бота (опционально):
 
-## 📁 Структура проекта
-
-```
-SmartTo-DoList/
-├── app/                        # Flask приложение (factory + blueprints)
-│   ├── __init__.py             # create_app(), db init, обработчики ошибок
-│   ├── models.py               # User, Task, TelegramLinkCode
-│   ├── db_schema.py           # легкие миграции (ALTER TABLE без Alembic)
-│   ├── utils.py                # validate_* и require_login
-│   ├── logging_config.py      # логирование
-│   └── routes/
-│       ├── main.py            # /, /about, /dashboard, /addtask
-│       ├── auth.py            # /auth/login, /auth/register, /auth/logout, /auth/forgot-password
-│       ├── account.py         # /account/profile, /account/settings и Telegram привязка
-│       └── tasks.py           # /tasks/* (CRUD задач)
-├── instance/                  # SQLite файлы БД
-├── tg_bot/                     # Telegram бот
-├── templates/                 # HTML шаблоны
-├── wsgi.py                     # WSGI entrypoint
-├── requirements.txt
-├── .env.example
-├── README.md
-└── tests/                     # pytest-тесты (используются pytest)
+```bash
+python -m tg_bot.run
 ```
 
-## 🔐 Переменные окружения (минимум)
+## Тесты
 
-- `SECRET_KEY` — обязательна для Flask-сессий
+Запуск тестов:
+
+```bash
+.venv/bin/python -m pytest -q
+```
+
+В проекте есть набор pytest-тестов — убедитесь, что `FLASK_ENV=testing` если потребуется отдельная конфигурация.
+
+## Переменные окружения (основные)
+
+- `SECRET_KEY` — обязательна для сессий
 - `FLASK_ENV` — `development`/`production`/`testing`
-- `DATABASE_URL` — для БД (по умолчанию используется SQLite в `instance/users.db`)
-- `TELEGRAM_BOT_TOKEN` — токен Telegram-бота
-- `TELEGRAM_API_URL` — URL API Telegram
+- `DATABASE_URL` — URL БД (по умолчанию использует SQLite `instance/users.db`)
+- `TELEGRAM_BOT_TOKEN` — токен Telegram-бота (если используете бота)
 
-## 💻 Разработка
+Файл `.env.example` содержит пример всех переменных, которые использует проект.
 
-### Тесты
-```bash
-pytest -q
-```
+## Полезные команды
 
-### Линтинг/форматирование (если настроено в окружении)
-```bash
-flake8 app/
-pylint app/
-black app/
-```
+- Инициализация БД вручную: `python init_db.py`
+- Запуск тестов: `.venv/bin/python -m pytest -q`
+- Локальный запуск: `python wsgi.py` или `flask run`
+- Запуск бота: `python -m tg_bot.run`
 
-## 📊 Роуты и эндпоинты (по текущей реализации)
+## Структура (коротко)
 
-### Страницы
-- `GET /` — главная
-- `GET /about` — информация о проекте
-- `GET /dashboard` — панель пользователя (требует login)
-- `GET /addtask` — страница создания задачи (требует login)
+Основные папки/файлы:
 
-### Аутентификация
-- `GET /auth/login`
-- `POST /auth/login`
-- `GET /auth/register`
-- `POST /auth/register`
-- `GET /auth/logout`
-- `GET/POST /auth/forgot-password`
+- `app/` — Flask-приложение и маршруты
+- `tg_bot/` — код Telegram-бота
+- `templates/`, `static/` — фронтенд
+- `wsgi.py` — точка входа
+- `init_db.py` — быстрый скрипт для создания БД
+- `tests/` — pytest
 
-### Задачи (JSON)
-- `GET/POST /tasks/new`
-  - `POST` создаёт задачу (form-data поля из HTML)
-- `GET /tasks/list` — список задач текущего пользователя
-- `GET /tasks/<int:task_id>` — получить задачу
-- `PUT /tasks/<int:task_id>` — обновить задачу
-- `DELETE /tasks/<int:task_id>` — удалить задачу
-- `POST /tasks/<int:task_id>/complete` — отметить выполненной
-
-### Профиль/настройки
-- `GET /account/profile`
-- `GET /account/settings`
-
-### Telegram (веб-привязка)
-- `POST /account/telegram/generate-link` — получить одноразовый код и TTL
-- `POST /account/telegram/unlink` — отвязать Telegram
-
-## 🤝 Вклад в проект
+## Вклад
 
 1. Fork репозитория
 2. Создайте ветку (`feature/...`)
-3. Commit изменения
-4. Push на ветку
-5. Откройте Pull Request
+3. Commit и push
+4. Откройте Pull Request
 
-## 📝 Лицензия
+## Лицензия
 
-MIT.
-> В репозитории в данный момент нет файла `LICENSE`, поэтому здесь убрано упоминание о нем.
+Проект лицензируется под MIT — см. файл `LICENSE`.
 
-## ❓ Поддержка
+## Поддержка
 
-- Issue: https://github.com/fert1z/SmartTo-DoList/issues
+Откройте issue: https://github.com/fert1z/SmartTo-DoList/issues
