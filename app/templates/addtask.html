@@ -16,7 +16,7 @@
     <p id="addtask-message" class="addtask-message" hidden role="status"></p>
 
     <form id="add-task-form" class="addtask-form-card">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label for="task-title">Название <span class="req">*</span></label>
         <input type="text" id="task-title" name="task-title" required maxlength="200" placeholder="Например: Купить хлеб">
 

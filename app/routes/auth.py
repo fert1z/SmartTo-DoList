@@ -30,10 +30,10 @@ def login():
                 session.permanent = True
                 session['user_id'] = user.id
                 session['username'] = user.username
-                logger.info(f"User {username} logged in")
+                logger.info(f"User login successful")
                 return redirect(url_for('main.dashboard'))
 
-            logger.warning(f"Failed login attempt for user {username}")
+            logger.warning(f"Failed login attempt")
             flash('Неверные учетные данные', 'error')
             return render_template('login.html'), 401
         except Exception as e:
@@ -96,7 +96,7 @@ def register():
             db.session.add(user)
             db.session.commit()
 
-            logger.info(f"New user registered: {username}")
+            logger.info(f"New user registered")
             flash('Регистрация успешна! Добро пожаловать!', 'success')
 
             session.permanent = True
@@ -117,8 +117,7 @@ def register():
 @auth_bp.route('/logout')
 def logout():
     """Выход из системы"""
-    username = session.get('username', 'Unknown')
-    logger.info(f"User {username} logged out")
+    logger.info(f"User logged out")
     session.clear()
     flash('Вы вышли из системы', 'success')
     return redirect(url_for('main.index'))

@@ -65,7 +65,7 @@ def create_task():
             db.session.add(task)
             db.session.commit()
 
-            logger.info(f"Task created by user {user_id}: {title}")
+            logger.info(f"Task created by user {user_id}")
             return jsonify({'success': True, 'task_id': task.id})
 
         except Exception as e:
@@ -140,13 +140,13 @@ def task_detail(task_id):
                 task.category = data['category']
 
             db.session.commit()
-            logger.info(f"Task {task_id} updated by user {user_id}")
+            logger.debug(f"Task {task_id} updated by user {user_id}")
             return jsonify({'success': True})
 
         elif request.method == 'DELETE':
             db.session.delete(task)
             db.session.commit()
-            logger.info(f"Task {task_id} deleted by user {user_id}")
+            logger.debug(f"Task {task_id} deleted by user {user_id}")
             return jsonify({'success': True})
 
     except Exception as e:
@@ -169,7 +169,7 @@ def complete_task(task_id):
         task.complete()
         db.session.commit()
 
-        logger.info(f"Task {task_id} marked as complete by user {user_id}")
+        logger.debug(f"Task {task_id} marked as complete by user {user_id}")
         return jsonify({'success': True})
 
     except Exception as e:

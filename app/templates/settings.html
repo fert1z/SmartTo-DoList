@@ -18,7 +18,7 @@
         {% endif %}
 
         <form action="/account/edit" method="post" class="settings-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="setting-group">
                 <label for="username">Имя пользователя</label>
                 <input id="username" name="username" type="text" value="{{ user.username if user else '' }}" required>

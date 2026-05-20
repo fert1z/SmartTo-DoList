@@ -112,7 +112,7 @@ def telegram_unlink():
         TelegramLinkCode.query.filter_by(user_id=user_id).delete()
         db.session.commit()
 
-        logger.info(f"Telegram unlinked for user {user_id}")
+        logger.debug(f"Telegram unlinked for user {user_id}")
         return jsonify({'success': True})
 
     except Exception as e:
@@ -142,7 +142,7 @@ def edit_profile():
                 user.email = new_email
 
         db.session.commit()
-        logger.info(f"Profile updated for user {user_id}")
+        logger.debug(f"Profile updated for user {user_id}")
         return jsonify({'success': True, 'message': 'Профиль обновлен'})
 
     except Exception as e:

@@ -423,7 +423,9 @@ def _start_reminder_loop(poll_seconds: int = 60):
                         )
 
                         try:
-                            get_bot().send_message(int(user.telegram_user_id), reminder_text)
+                            # Escape reminder text to prevent HTML injection in Telegram
+                            safe_reminder_text = html.escape(reminder_text) if reminder_text else ""
+                            get_bot().send_message(int(user.telegram_user_id), safe_reminder_text)
                         except Exception as e:
                             logger.warning(
                                 "Telegram send failed for user_id=%s task_id=%s: %s",

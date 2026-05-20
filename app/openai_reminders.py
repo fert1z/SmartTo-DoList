@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import os
 import logging
 from typing import Optional
@@ -76,6 +77,8 @@ def generate_reminder_text(
         data = r.json()
         text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
         text = (text or "").strip()
+        # Escape HTML to prevent injection in Telegram (when sent with parse_mode='HTML')
+        text = html.escape(text) if text else ""
         return text if text else "Напоминание: пора заняться задачей. Проверьте дедлайн и приоритет."
     except Exception:
         logger.exception("OpenAI request failed")
