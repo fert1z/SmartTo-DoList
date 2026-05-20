@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}SmartTo-DoList{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/navigation.css">
+    {% block head_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <h1><a href="/">SmartTo-DoList</a></h1>
+            <nav>
+                {% if session.get('user_id') %}
+                    <a href="/dashboard">📊 Задачи</a>
+                    <a href="/addtask">➕ Создать</a>
+                    <a href="/account/profile">👤 Профиль</a>
+                    <a href="/account/settings">⚙️ Настройки</a>
+                    <a href="/auth/logout">🚪 Выход</a>
+                {% else %}
+                    <a href="/">Главная</a>
+                    <a href="/about">О проекте</a>
+                    <a href="/auth/login">Вход</a>
+                    <a href="/auth/register">Регистрация</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

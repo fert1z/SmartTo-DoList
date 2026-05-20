@@ -41,8 +41,14 @@ function confirmPasswords(event) {
 
 function usernameValidation(event) {
     var username = document.querySelector('#username').value.trim();
+    var usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
     if (username.length < 3) {
         alert('Имя пользователя — не менее 3 символов.');
+        if (event) event.preventDefault();
+        return false;
+    }
+    if (!usernameRegex.test(username)) {
+        alert('Имя пользователя должно содержать только латинские буквы, цифры и подчеркивание (3-20 символов).');
         if (event) event.preventDefault();
         return false;
     }
