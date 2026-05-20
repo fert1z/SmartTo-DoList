@@ -50,11 +50,20 @@ class ProductionConfig(Config):
     """Конфигурация для продакшена"""
     DEBUG = False
     TESTING = False
-    
-    # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
+
+    # Database - поддержка как старого, так и нового формата PostgreSQL
+    _db_url = os.environ.get('DATABASE_URL', '')
+    if _db_url:
+        if _db_url.startswith('postgres://'):
+            _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+        SQLALCHEMY_DATABASE_URI = _db_url
+    else:
+        # Если DATABASE_URL не установлен, использовать SQLite
+        BASEDIR = os.path.abspath(os.path.dirname(__file__))
+        SQLALCHEMY_DATABASE_URI = os.environ.get(
+            'DATABASE_URL',
+            'sqlite:///' + os.path.join(BASEDIR, 'instance', 'users.db')
+        )
 
 
 class TestingConfig(Config):

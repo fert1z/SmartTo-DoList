@@ -1,10 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 import os
+import logging
 from config import config
 
 # Инициализация расширений
 db = SQLAlchemy()
+csrf = CSRFProtect()
 
 
 def create_app(config_name=None):
@@ -25,9 +28,14 @@ def create_app(config_name=None):
     
     # Загружаем конфигурацию
     app.config.from_object(config.get(config_name, config['default']))
+
+    # Инициализируем логирование
+    from app.logging_config import setup_logging
+    setup_logging(app)
     
     # Инициализируем расширения
     db.init_app(app)
+    csrf.init_app(app)
     
     # Регистрируем контекст приложения для работы с БД
     @app.shell_context_processor
@@ -37,9 +45,13 @@ def create_app(config_name=None):
     # Регистрируем blueprints
     from app.routes import main_bp, auth_bp, tasks_bp, account_bp
     
+    # REST API под /api/tasks
+    from app.routes.api_tasks import api_tasks_bp
+    
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(tasks_bp, url_prefix='/tasks')
+    app.register_blueprint(api_tasks_bp)
     app.register_blueprint(account_bp, url_prefix='/account')
     
     # Обработчик ошибок 404

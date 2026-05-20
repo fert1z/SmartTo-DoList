@@ -8,7 +8,7 @@ import html
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import telebot
 from telebot import types
@@ -114,8 +114,8 @@ def register_handlers() -> telebot.TeleBot:
                 b.reply_to(message, 'Использование: <code>/link КОД</code> (код из веб-настроек)')
                 return
             code = parts[1].strip().upper()
-            if not re.match(r'^[A-F0-9]{8}$', code):
-                b.reply_to(message, 'Неверный формат кода. Нужен 8 символов (буквы и цифры).')
+            if not re.match(r'^[A-F0-9]{16}$', code):
+                b.reply_to(message, 'Неверный формат кода. Нужен 16 символов (буквы A-F и цифры 0-9).')
                 return
 
             _cleanup_expired_codes()
@@ -146,6 +146,7 @@ def register_handlers() -> telebot.TeleBot:
             TelegramLinkCode.query.filter_by(user_id=user.id).delete()
             db.session.commit()
 
+            logger.info(f"Telegram linked for user {user.username}")
             b.reply_to(message, f'Аккаунт <b>{html.escape(user.username)}</b> успешно привязан.')
 
     @b.message_handler(commands=['unlink'])
@@ -361,6 +362,93 @@ def register_handlers() -> telebot.TeleBot:
             b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
 
     return b
+
+
+def _start_reminder_loop(poll_seconds: int = 60):
+    """
+    Фоновый цикл автосообщений для due_date.
+    Запускать один раз при старте бота.
+    """
+    import threading
+    import time
+
+    def loop():
+        from app.openai_reminders import generate_reminder_text
+        from app.models import ReminderLog  # локально чтобы не ломать импорт
+
+        window_minutes = int(os.environ.get("REMIND_WINDOW_MINUTES", "30").strip() or "30")
+        reminder_type = "due_soon"
+
+        # Чтобы не отправлять повторно бесконечно: ограничиваем интервал (в минутах)
+        dedup_minutes = int(os.environ.get("REMIND_DEDUP_MINUTES", "1440").strip() or "1440")
+
+        while True:
+            now = datetime.utcnow()
+            cutoff = now + timedelta(minutes=window_minutes)
+
+            try:
+                with get_app().app_context():
+                    tasks = (  # type: ignore[misc]
+                        Task.query.filter(Task.status != 'completed')  # type: ignore[misc]
+                        .filter(Task.due_date.isnot(None))  # type: ignore[misc]
+                        .filter(Task.due_date <= cutoff)  # type: ignore[misc]
+                        .all()
+                    )
+
+                    for task in tasks:
+                        # Если уже давно просрочено — тоже шлём как "due_soon" (тип можно расширять позже)
+                        user = task.owner
+                        if not user or not user.telegram_user_id:
+                            continue
+
+                        existing = (
+                            ReminderLog.query.filter_by(
+                                task_id=task.id,
+                                reminder_type=reminder_type,
+                                user_id=user.id,
+                            )
+                            .order_by(ReminderLog.reminded_at.desc())
+                            .first()
+                        )
+                        if existing:
+                            age = datetime.utcnow() - existing.reminded_at
+                            if age.total_seconds() < dedup_minutes * 60:
+                                continue
+
+                        reminder_text = generate_reminder_text(  # type: ignore[misc]
+                            title=task.title or "",
+                            description=task.description or "",
+                            due_iso=task.due_date.isoformat() if task.due_date else None,
+                            priority=task.priority,
+                        )
+
+                        try:
+                            get_bot().send_message(int(user.telegram_user_id), reminder_text)
+                        except Exception as e:
+                            logger.warning(
+                                "Telegram send failed for user_id=%s task_id=%s: %s",
+                                user.id,
+                                task.id,
+                                e,
+                            )
+                            continue
+
+                        row = ReminderLog(  # type: ignore[misc]
+                            task_id=task.id,
+                            user_id=user.id,
+                            reminder_type=reminder_type,
+                            payload=reminder_text,
+                        )
+                        db.session.add(row)
+                        db.session.commit()
+            except Exception as e:
+                logger.exception("Reminder loop error: %s", str(e))
+
+            time.sleep(poll_seconds)
+
+    thread = threading.Thread(target=loop, daemon=True, name="reminder-loop")
+    thread.start()
+    return thread
 
 
 def run_polling():

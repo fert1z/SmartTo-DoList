@@ -1,0 +1,53 @@
+"""Конфигурация логирования приложения"""
+import logging
+import logging.handlers
+import os
+from pathlib import Path
+
+
+def setup_logging(app):
+    """Настраивает логирование для приложения"""
+    log_dir = Path(app.instance_path) / 'logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # Создаем форматер
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+    # Обработчик для файла (все логи)
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_dir / 'app.log',
+        maxBytes=10485760,
+        backupCount=10
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+
+    # Обработчик для ошибок
+    error_handler = logging.handlers.RotatingFileHandler(
+        log_dir / 'error.log',
+        maxBytes=10485760,
+        backupCount=10
+    )
+    error_handler.setFormatter(formatter)
+    error_handler.setLevel(logging.ERROR)
+
+    # Обработчик консоли (только для разработки)
+    if app.debug:
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(logging.DEBUG)
+        app.logger.addHandler(console_handler)
+
+    # Добавляем обработчики
+    app.logger.addHandler(file_handler)
+    app.logger.addHandler(error_handler)
+    app.logger.setLevel(logging.INFO)
+
+    # Настраиваем логирование для модулей
+    logging.getLogger('app').addHandler(file_handler)
+    logging.getLogger('app').addHandler(error_handler)
+    logging.getLogger('app').setLevel(logging.INFO)
+
+    return app.logger

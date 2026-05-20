@@ -52,8 +52,8 @@ function handleAddTask() {
     }
 
     const params = new URLSearchParams({
-        'task-title': title.trim(),
-        'task-description': description,
+        title: title.trim(),
+        description: description,
         priority: priority,
         category: category,
     });
@@ -61,7 +61,7 @@ function handleAddTask() {
         params.set('task-datetime', datetime);
     }
 
-    fetch('/tasks/new', {
+    fetch('/api/tasks', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -99,15 +99,28 @@ function startVoiceRecording() {
         return;
     }
 
-    var recognition = new SpeechRecognition();
-    recognition.lang = 'ru-RU';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
     var btn = document.getElementById('voice-task');
     var originalText = btn.value;
     btn.value = '🎤 Слушаю…';
     btn.disabled = true;
+
+    function restore() {
+        btn.value = originalText;
+        btn.disabled = false;
+    }
+
+    function micNotAllowed() {
+        restore();
+        showFormMessage(
+            'Доступ к микрофону запрещён. Разрешите микрофон в настройках браузера (иконка слева от адреса) и повторите диктовку.',
+            true
+        );
+    }
+
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = function (event) {
         var transcript = event.results[0][0].transcript;
@@ -117,19 +130,47 @@ function startVoiceRecording() {
     };
 
     recognition.onerror = function (event) {
-        showFormMessage('Ошибка микрофона: ' + event.error, true);
+        if (event && event.error === 'not-allowed') {
+            micNotAllowed();
+            return;
+        }
+        restore();
+        showFormMessage('Ошибка микрофона: ' + (event && event.error ? event.error : 'unknown'), true);
     };
 
     recognition.onend = function () {
-        btn.value = originalText;
-        btn.disabled = false;
+        restore();
     };
 
+    // Попробуем заранее запросить доступ к микрофону, чтобы браузер показал permission prompt.
     try {
-        recognition.start();
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices
+                .getUserMedia({ audio: true })
+                .then(function (stream) {
+                    // Отпускаем поток сразу, т.к. SpeechRecognition сам управляет устройством.
+                    try {
+                        stream.getTracks().forEach(function (t) {
+                            t.stop();
+                        });
+                    } catch (e) {
+                        // ignore
+                    }
+                    recognition.start();
+                })
+                .catch(function (err) {
+                    if (err && err.name === 'NotAllowedError') {
+                        micNotAllowed();
+                        return;
+                    }
+                    restore();
+                    showFormMessage('Не удалось получить доступ к микрофону. Проверьте настройки браузера.', true);
+                });
+        } else {
+            recognition.start();
+        }
     } catch (e) {
-        btn.value = originalText;
-        btn.disabled = false;
+        restore();
         showFormMessage('Не удалось запустить запись.', true);
     }
 }

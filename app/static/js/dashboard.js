@@ -44,8 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function loadTasks() {
-    const toast = document.getElementById('dashboard-toast');
-    fetch('/tasks/list', { credentials: 'same-origin' })
+    fetch('/api/tasks', { credentials: 'same-origin' })
         .then(function (response) {
             if (response.status === 401) {
                 window.location.href = '/auth/login';
@@ -126,49 +125,81 @@ function renderTasks(tasks) {
         }
 
         const priorityColor = getPriorityColor(task.priority);
-        const actions =
-            task.status === 'completed'
-                ? '<div class="task-actions"><span class="task-done-label">Выполнено</span>' +
-                  '<button type="button" class="btn-delete" data-action="delete" data-task-id="' +
-                  task.id +
-                  '">Удалить</button></div>'
-                : '<div class="task-actions">' +
-                  '<button type="button" class="btn-complete" data-action="complete" data-task-id="' +
-                  task.id +
-                  '">Выполнено</button>' +
-                  '<button type="button" class="btn-delete" data-action="delete" data-task-id="' +
-                  task.id +
-                  '">Удалить</button></div>';
 
-        card.innerHTML =
-            '<div class="task-card-inner" style="border-top: 4px solid ' +
-            priorityColor +
-            '">' +
-            '<h3 class="task-title">' +
-            escapeHtml(task.title) +
-            '</h3>' +
-            (task.description
-                ? '<p class="task-description">' + escapeHtml(task.description) + '</p>'
-                : '') +
-            '<p class="task-meta">' +
-            '<span class="task-date">🗓️ ' +
-            formatDate(task.due_date) +
-            '</span>' +
-            '<span class="task-priority-badge" style="background:' +
-            priorityColor +
-            '">' +
-            getPriorityLabel(task.priority) +
-            '</span>' +
-            '</p>' +
-            actions +
-            '</div>';
+        const inner = document.createElement('div');
+        inner.className = 'task-card-inner';
+        inner.style.borderTop = '4px solid ' + priorityColor;
 
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'task-title';
+        titleEl.textContent = task.title || '';
+        inner.appendChild(titleEl);
+
+        if (task.description) {
+            const descEl = document.createElement('p');
+            descEl.className = 'task-description';
+            descEl.textContent = task.description;
+            inner.appendChild(descEl);
+        }
+
+        const metaEl = document.createElement('p');
+        metaEl.className = 'task-meta';
+
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'task-date';
+        dateSpan.textContent = '🗓️ ' + formatDate(task.due_date);
+        metaEl.appendChild(dateSpan);
+
+        const prSpan = document.createElement('span');
+        prSpan.className = 'task-priority-badge';
+        prSpan.style.background = priorityColor;
+        prSpan.textContent = getPriorityLabel(task.priority);
+        metaEl.appendChild(prSpan);
+
+        inner.appendChild(metaEl);
+
+        const actionsEl = document.createElement('div');
+        actionsEl.className = 'task-actions';
+
+        if (task.status === 'completed') {
+            const doneLabel = document.createElement('span');
+            doneLabel.className = 'task-done-label';
+            doneLabel.textContent = 'Выполнено';
+            actionsEl.appendChild(doneLabel);
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn-delete';
+            delBtn.setAttribute('data-action', 'delete');
+            delBtn.setAttribute('data-task-id', String(task.id));
+            delBtn.textContent = 'Удалить';
+            actionsEl.appendChild(delBtn);
+        } else {
+            const completeBtn = document.createElement('button');
+            completeBtn.type = 'button';
+            completeBtn.className = 'btn-complete';
+            completeBtn.setAttribute('data-action', 'complete');
+            completeBtn.setAttribute('data-task-id', String(task.id));
+            completeBtn.textContent = 'Выполнено';
+            actionsEl.appendChild(completeBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn-delete';
+            delBtn.setAttribute('data-action', 'delete');
+            delBtn.setAttribute('data-task-id', String(task.id));
+            delBtn.textContent = 'Удалить';
+            actionsEl.appendChild(delBtn);
+        }
+
+        inner.appendChild(actionsEl);
+        card.appendChild(inner);
         taskBoard.appendChild(card);
     });
 }
 
 function completeTask(taskId) {
-    fetch('/tasks/' + taskId + '/complete', {
+    fetch('/api/tasks/' + taskId + '/complete', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
@@ -197,7 +228,7 @@ function completeTask(taskId) {
 function deleteTask(taskId) {
     if (!confirm('Удалить эту задачу?')) return;
 
-    fetch('/tasks/' + taskId, {
+    fetch('/api/tasks/' + taskId, {
         method: 'DELETE',
         credentials: 'same-origin',
         headers: { Accept: 'application/json' },
@@ -260,10 +291,4 @@ function formatDate(dateString) {
         hour: '2-digit',
         minute: '2-digit',
     });
-}
-
-function escapeHtml(text) {
-    var div = document.createElement('div');
-    div.textContent = text == null ? '' : text;
-    return div.innerHTML;
 }

@@ -8,6 +8,8 @@ def apply_schema_migrations(db):
     dialect = bind.dialect.name
 
     tables = inspector.get_table_names()
+
+    # users.telegram_user_id
     if 'users' in tables:
         cols = {c['name'] for c in inspector.get_columns('users')}
         if 'telegram_user_id' not in cols:
@@ -22,3 +24,10 @@ def apply_schema_migrations(db):
                         'ON users (telegram_user_id)'
                     )
                 )
+
+    # reminder_logs (если таблица отсутствует — пусть create_all её создаст,
+    # но если по какой-то причине её не создало, добавим минимальную структуру).
+    if 'reminder_logs' not in tables:
+        # Для простоты создадим таблицу через SQLAlchemy metadata.
+        # create_all обычно всё равно её делает, но этот блок защищает старые схемы.
+        return

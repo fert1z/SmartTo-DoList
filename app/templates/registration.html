@@ -26,6 +26,7 @@
             <p class="auth-alert auth-alert--error" role="alert">{{ error }}</p>
             {% endif %}
             <form id="registration_form" action="/auth/register" method="post" class="auth-form" onsubmit="return validForm(event);">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label for="username">Имя пользователя</label>
                 <input type="text" id="username" name="username" required autocomplete="username" minlength="3">
 

@@ -4,7 +4,10 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from app.models import Task
 from app import db
+from app.utils import require_login
+import logging
 
+logger = logging.getLogger(__name__)
 main_bp = Blueprint('main', __name__)
 
 
@@ -21,16 +24,22 @@ def about():
 
 
 @main_bp.route('/dashboard')
+@require_login
 def dashboard():
     """Панель управления"""
-    if not session.get('user_id'):
-        return redirect(url_for('auth.login'))
-    return render_template('dashboard.html')
+    try:
+        return render_template('dashboard.html')
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {str(e)}")
+        return render_template('error500.html'), 500
 
 
 @main_bp.route('/addtask')
+@require_login
 def addtask():
     """Страница добавления задачи"""
-    if not session.get('user_id'):
-        return redirect(url_for('auth.login'))
-    return render_template('addtask.html')
+    try:
+        return render_template('addtask.html')
+    except Exception as e:
+        logger.error(f"Error loading addtask page: {str(e)}")
+        return render_template('error500.html'), 500
