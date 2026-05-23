@@ -32,19 +32,48 @@ def validate_password(password):
     if not password:
         return False, "Пароль обязателен"
     if len(password) < 8:
-        return False, "Пароль должен быть не менее 8 символов"
+        return False, "Пароль должен содержать не менее 8 символов"
     if len(password) > 128:
         return False, "Пароль не должен превышать 128 символов"
+    if not re.search(r'[a-z]', password):
+        return False, "Пароль должен содержать хотя бы одну строчную букву"
+    if not re.search(r'[A-Z]', password):
+        return False, "Пароль должен содержать хотя бы одну заглавную букву"
+    if not re.search(r'\d', password):
+        return False, "Пароль должен содержать хотя бы одну цифру"
+    if not re.search(r'[!@#$%^&*()_+\-=[\]{};:\"\\|,<.>/?]', password):
+        return False, "Пароль должен содержать хотя бы один специальный символ"
     return True, None
 
 
 def require_login(f):
-    """Декоратор для проверки аутентификации"""
+    """Декоратор для проверки аутентификации и существования пользователя"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('user_id'):
+        user_id = session.get('user_id')
+        if not user_id:
+            if request.is_json or request.path.startswith('/api'):
+                return jsonify({'error': 'Не авторизован'}), 401
+            return redirect(url_for('auth.login'))
+        # Проверка существования пользователя
+        from app.models import User
+        user = User.query.get(user_id)
+        if not user:
+            session.clear()
             if request.is_json or request.path.startswith('/api'):
                 return jsonify({'error': 'Не авторизован'}), 401
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+def format_datetime_for_user(dt, timezone_str='UTC'):
+    """Форматирует datetime для пользователя с учетом временной зоны"""
+    if dt is None:
+        return ''
+    try:
+        # Простая реализация (можно расширить с pytz)
+        return dt.strftime('%d.%m.%Y %H:%M')
+    except Exception:
+        return str(dt)
+

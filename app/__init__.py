@@ -1,10 +1,10 @@
 from flask import Flask, current_app
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 import os
 import logging
 from config import config
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from app.limiter import limiter
 
 # Инициализация расширений
 db = SQLAlchemy()
@@ -24,12 +24,16 @@ def create_app(config_name=None, scheduler_enabled=None):
     """
     # Определяем конфигурацию
     if config_name is None:
-        config_name = os.getenv('FLASK_ENV', 'development')
+        config_name = os.getenv('FLASK_CONFIG') or os.getenv('FLASK_ENV') or 'production'
     
     app = Flask(__name__)
     
     # Загружаем конфигурацию
     app.config.from_object(config.get(config_name, config['default']))
+
+    # В production SECRET_KEY должен быть задан явно
+    if app.config['ENV'] == 'production' and not app.config.get('SECRET_KEY'):
+        raise RuntimeError('SECRET_KEY must be set in production environment')
 
     # Инициализируем логирование
     from app.logging_config import setup_logging
@@ -42,6 +46,8 @@ def create_app(config_name=None, scheduler_enabled=None):
     # Инициализируем расширения
     db.init_app(app)
     csrf.init_app(app)
+    if app.config.get('RATELIMIT_ENABLED', True):
+        limiter.init_app(app)
     
     # Регистрируем контекст приложения для работы с БД
     @app.shell_context_processor
@@ -62,9 +68,11 @@ def create_app(config_name=None, scheduler_enabled=None):
 
     @app.context_processor
     def inject_csrf_token():
-        # В шаблонах используется вызов `csrf_token()` — нужно передавать
-        # саму функцию, чтобы шаблон мог её вызвать при рендеринге.
-        return {'csrf_token': generate_csrf}
+        # В шаблонах HTML нужно значение токена для meta и формы.
+        return {
+            'csrf_token': generate_csrf,
+            'csrf_token_value': generate_csrf(),
+        }
 
     @app.after_request
     def apply_security_headers(response):
@@ -72,6 +80,18 @@ def create_app(config_name=None, scheduler_enabled=None):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Referrer-Policy'] = 'no-referrer-when-downgrade'
         response.headers['Permissions-Policy'] = 'geolocation=()'
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'none';"
+        )
         return response
 
     # Обработчик ошибок 404
@@ -88,16 +108,26 @@ def create_app(config_name=None, scheduler_enabled=None):
         return render_template('error500.html'), 500
     
     with app.app_context():
-        # Применяем легкие миграции для обновления схемы БД (добавление новых колонок)
-        from app.db_schema import apply_schema_migrations
-        apply_schema_migrations(db)
+        if app.config['ENV'] != 'production':
+            # В разработке и тестах создаём таблицы и применяем упрощённые миграции.
+            db.create_all()
+            from app.db_schema import apply_schema_migrations
+            apply_schema_migrations(db)
+        else:
+            app.logger.info(
+                'Production database schema management must be handled externally. '
+                'Skipping create_all() and schema migrations.'
+            )
 
-        # Запускаем планировщик уведомлений только в основном процессе
-        if app.config.get('SCHEDULER_ENABLED', True) and (
-            not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
-        ):
-            from app.scheduler import init_scheduler
-            init_scheduler(app)
+        # Планировщик запускается только в основном процессе, не в каждом worker'е Gunicorn.
+        if app.config.get('SCHEDULER_ENABLED', True):
+            is_gunicorn = os.environ.get('GUNICORN_WORKER_ID') is not None
+            is_werkzeug_main = os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
+            if not is_gunicorn and (not app.debug or is_werkzeug_main):
+                from app.scheduler import init_scheduler
+                init_scheduler(app)
+            elif is_gunicorn:
+                app.logger.info('Scheduler disabled in Gunicorn worker process.')
 
     return app
 

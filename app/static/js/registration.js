@@ -1,10 +1,19 @@
 function validForm(event) {
-    return (
-        confirmPasswords(event) &&
-        usernameValidation(event) &&
-        validatePasswordLen(event) &&
-        valideEmail(event)
-    );
+    // Запускаем каждую проверку отдельно, чтобы они не блокировали друг друга
+    var isPasswordMatch = confirmPasswords(event);
+    var isUsernameValid = usernameValidation(event);
+    var isPasswordLenValid = validatePasswordLen(event);
+    var isEmailValid = valideEmail(event);
+
+    // Если хотя бы ОДНА проверка провалилась
+    if (!isPasswordMatch || !isUsernameValid || !isPasswordLenValid || !isEmailValid) {
+        // На всякий случай принудительно останавливаем отправку формы
+        if (event) event.preventDefault();
+        return false;
+    }
+
+    // Если всё идеально, разрешаем форме спокойно уйти на сервер Flask
+    return true;
 }
 
 function validatePasswordLen(event) {

@@ -26,6 +26,7 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=_utcnow, onupdate=_utcnow)
 
     telegram_user_id = db.Column(db.BigInteger, unique=True, nullable=True, index=True)
+    timezone = db.Column(db.String(50), default='UTC')  # Временная зона пользователя
 
     # Связи
     tasks = db.relationship('Task', backref='owner', lazy=True, cascade='all, delete-orphan')
@@ -45,6 +46,10 @@ class User(db.Model):
 class Task(db.Model):
     """Модель задачи"""
     __tablename__ = 'tasks'
+    __table_args__ = (
+        db.Index('ix_tasks_user_status', 'user_id', 'status'),
+        db.Index('ix_tasks_user_duedate', 'user_id', 'due_date'),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False, index=True)
@@ -60,6 +65,8 @@ class Task(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=_utcnow, onupdate=_utcnow)
 
     completed_at = db.Column(db.DateTime)
+    notified_at = db.Column(db.DateTime)  # Когда последнее напоминание было отправлено
+    version = db.Column(db.Integer, default=1)  # Для оптимистичных блокировок
 
     # Внешний ключ
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -96,6 +103,33 @@ class TelegramLinkCode(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
 
     user = db.relationship('User', backref=db.backref('telegram_link_codes', lazy=True))
+
+
+class PasswordResetToken(db.Model):
+    """Одноразовый токен для сброса пароля."""
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+
+    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy=True))
+
+
+class EmailChangeRequest(db.Model):
+    """Запрос на подтверждение изменения email."""
+    __tablename__ = 'email_change_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    new_email = db.Column(db.String(120), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+
+    user = db.relationship('User', backref=db.backref('email_change_requests', lazy=True))
 
 
 class ReminderLog(db.Model):

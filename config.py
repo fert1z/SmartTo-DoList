@@ -5,6 +5,7 @@ class Config:
     """Базовая конфигурация приложения"""
     # Flask
     DEBUG = False
+    ENV = 'production'
     TESTING = False
     
     # SQLAlchemy
@@ -12,11 +13,12 @@ class Config:
     SQLALCHEMY_ECHO = False
     
     # Безопасность
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    MAIL_REQUIRE_AUTH = os.environ.get('MAIL_REQUIRE_AUTH', '1').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
     
     # Телеграм
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
@@ -48,9 +50,11 @@ class Config:
 class DevelopmentConfig(Config):
     """Конфигурация для разработки"""
     DEBUG = True
+    ENV = 'development'
     TESTING = False
     SQLALCHEMY_ECHO = True
     SESSION_COOKIE_SECURE = False
+    SECRET_KEY = 'dev-secret-key-change-in-development'
     
     # Base directory
     BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -65,7 +69,9 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Конфигурация для продакшена"""
     DEBUG = False
+    ENV = 'production'
     TESTING = False
+    SESSION_COOKIE_SECURE = True
 
     # Database - поддержка как старого, так и нового формата PostgreSQL
     _db_url = os.environ.get('DATABASE_URL', '')
@@ -86,10 +92,12 @@ class TestingConfig(Config):
     """Конфигурация для тестирования"""
     DEBUG = True
     TESTING = True
+    SECRET_KEY = 'testing-secret-key'
     
     # Database для тестов (в памяти)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False  # Отключить rate limiting при тестировании
 
 
 # Выбор конфигурации в зависимости от окружения
@@ -97,5 +105,5 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
-    'default': DevelopmentConfig
+    'default': ProductionConfig
 }

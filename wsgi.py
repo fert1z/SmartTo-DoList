@@ -15,7 +15,10 @@ from app import create_app, db, init_db
 from flask_migrate import Migrate
 
 # Создаем приложение
-app = create_app(config_name=os.getenv('FLASK_ENV', 'development'))
+app = create_app(
+    config_name=os.getenv('FLASK_CONFIG') or os.getenv('FLASK_ENV') or 'production',
+    scheduler_enabled=False,
+)
 migrate = Migrate(app, db)
 
 

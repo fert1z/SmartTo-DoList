@@ -98,7 +98,7 @@ def create_task_api():
         db.session.add(task)
         db.session.commit()
 
-        logger.info('Task created via API by user %s: %s', user_id, title)
+        logger.info('Task created via API by user %s', user_id)
         return jsonify({'success': True, 'task_id': task.id})
     except Exception as e:
         db.session.rollback()

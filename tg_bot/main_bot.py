@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 _app = None
 bot: telebot.TeleBot | None = None
+_handlers_registered = False
+_link_attempts: dict[int, list[datetime]] = {}
+MAX_LINK_ATTEMPTS = 5
+LINK_ATTEMPT_WINDOW_MINUTES = 15
 
 # Ожидание текста новой задачи после команды /add без аргументов
 _pending_add_title: dict[int, bool] = {}
@@ -31,10 +35,28 @@ def _clear_pending(uid: int):
     _pending_add_title.pop(uid, None)
 
 
+def _cleanup_link_attempts() -> None:
+    now = datetime.utcnow()
+    cutoff = now - timedelta(minutes=LINK_ATTEMPT_WINDOW_MINUTES)
+    for uid, timestamps in list(_link_attempts.items()):
+        filtered = [ts for ts in timestamps if ts >= cutoff]
+        if filtered:
+            _link_attempts[uid] = filtered
+        else:
+            _link_attempts.pop(uid, None)
+
+
+def _register_link_attempt(uid: int) -> int:
+    now = datetime.utcnow()
+    _link_attempts.setdefault(uid, []).append(now)
+    _cleanup_link_attempts()
+    return len(_link_attempts.get(uid, []))
+
+
 def get_app():
     global _app
     if _app is None:
-        _app = create_app()
+        _app = create_app(scheduler_enabled=False)
     return _app
 
 
@@ -65,12 +87,15 @@ def _require_user(message) -> User | None:
 
 
 def _cleanup_expired_codes():
-    TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.utcnow()).delete()
-    db.session.commit()
+    with db.session.begin():
+        TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.utcnow()).delete(synchronize_session=False)
 
 
 def register_handlers() -> telebot.TeleBot:
+    global _handlers_registered
     b = get_bot()
+    if _handlers_registered:
+        return b
 
     @b.message_handler(commands=['start'])
     def cmd_start(message):
@@ -118,6 +143,13 @@ def register_handlers() -> telebot.TeleBot:
                 b.reply_to(message, 'Неверный формат кода. Нужен 16 символов (буквы A-F и цифры 0-9).')
                 return
 
+            if _register_link_attempt(message.from_user.id) > MAX_LINK_ATTEMPTS:
+                b.reply_to(
+                    message,
+                    'Слишком много попыток привязки. Повторите через 15 минут.',
+                )
+                return
+
             _cleanup_expired_codes()
             row = TelegramLinkCode.query.filter_by(code=code).first()
             if not row or row.expires_at < datetime.utcnow():
@@ -138,13 +170,13 @@ def register_handlers() -> telebot.TeleBot:
                 b.reply_to(message, 'Ошибка: пользователь не найден.')
                 return
 
-            if user.telegram_user_id and user.telegram_user_id != tg_id:
-                user.telegram_user_id = None
-                db.session.flush()
+            with db.session.begin():
+                if user.telegram_user_id and user.telegram_user_id != tg_id:
+                    user.telegram_user_id = None
+                    db.session.flush()
 
-            user.telegram_user_id = tg_id
-            TelegramLinkCode.query.filter_by(user_id=user.id).delete()
-            db.session.commit()
+                user.telegram_user_id = tg_id
+                TelegramLinkCode.query.filter_by(user_id=user.id).delete(synchronize_session=False)
 
             logger.info(f"Telegram linked for user {user.username}")
             b.reply_to(message, f'Аккаунт <b>{html.escape(user.username)}</b> успешно привязан.')
@@ -157,9 +189,9 @@ def register_handlers() -> telebot.TeleBot:
             if not u:
                 b.reply_to(message, 'Telegram не был привязан.')
                 return
-            u.telegram_user_id = None
-            TelegramLinkCode.query.filter_by(user_id=u.id).delete()
-            db.session.commit()
+            with db.session.begin():
+                u.telegram_user_id = None
+                TelegramLinkCode.query.filter_by(user_id=u.id).delete(synchronize_session=False)
             b.reply_to(message, 'Telegram отвязан. Вы можете привязать аккаунт снова через сайт.')
 
     @b.message_handler(commands=['stats'])
@@ -361,6 +393,7 @@ def register_handlers() -> telebot.TeleBot:
             db.session.commit()
             b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
 
+    _handlers_registered = True
     return b
 
 

@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 
 from app import db
-from app.models import User, TelegramLinkCode, Task
-from app.utils import require_login
+from app.mail_utils import send_email
+from app.models import EmailChangeRequest, Task, TelegramLinkCode, User
+from app.utils import require_login, validate_email_format
+from app.limiter import limiter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -70,20 +72,20 @@ def settings():
 
 @account_bp.route('/telegram/generate-link', methods=['POST'])
 @require_login
+@limiter.limit('10 per hour')
 def telegram_generate_link():
     """Выдать одноразовый код привязки Telegram."""
     try:
         user_id = session.get('user_id')
-        TelegramLinkCode.query.filter_by(user_id=user_id).delete()
-
         code = secrets.token_hex(8).upper()
         row = TelegramLinkCode(
             user_id=user_id,
             code=code,
             expires_at=datetime.utcnow() + timedelta(minutes=LINK_CODE_TTL_MINUTES),
         )
-        db.session.add(row)
-        db.session.commit()
+        with db.session.begin():
+            TelegramLinkCode.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+            db.session.add(row)
 
         logger.info(f"Telegram link code generated for user {user_id}")
         return jsonify({
@@ -99,6 +101,7 @@ def telegram_generate_link():
 
 @account_bp.route('/telegram/unlink', methods=['POST'])
 @require_login
+@limiter.limit('10 per hour')
 def telegram_unlink():
     """Отвязать Telegram от аккаунта."""
     try:
@@ -108,9 +111,9 @@ def telegram_unlink():
         if not user:
             return jsonify({'error': 'Пользователь не найден'}), 404
 
-        user.telegram_user_id = None
-        TelegramLinkCode.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
+        with db.session.begin():
+            user.telegram_user_id = None
+            TelegramLinkCode.query.filter_by(user_id=user_id).delete(synchronize_session=False)
 
         logger.debug(f"Telegram unlinked for user {user_id}")
         return jsonify({'success': True})
@@ -123,6 +126,7 @@ def telegram_unlink():
 
 @account_bp.route('/edit', methods=['POST'])
 @require_login
+@limiter.limit('10 per hour')
 def edit_profile():
     """Редактирование профиля"""
     try:
@@ -137,9 +141,36 @@ def edit_profile():
         if 'email' in data:
             new_email = data['email'].strip().lower()
             if new_email != user.email:
+                if not validate_email_format(new_email):
+                    return jsonify({'error': 'Некорректный email'}), 400
                 if User.query.filter_by(email=new_email).first():
                     return jsonify({'error': 'Этот email уже зарегистрирован'}), 409
-                user.email = new_email
+
+                token = secrets.token_urlsafe(32)
+                expires_at = datetime.utcnow() + timedelta(hours=1)
+                with db.session.begin():
+                    EmailChangeRequest.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+                    change_request = EmailChangeRequest(
+                        user_id=user_id,
+                        new_email=new_email,
+                        token=token,
+                        expires_at=expires_at,
+                        used=False,
+                    )
+                    db.session.add(change_request)
+
+                confirm_url = url_for('account.confirm_email', token=token, _external=True)
+                subject = 'SmartTo-DoList: подтвердите новый email'
+                body_text = (
+                    f'Здравствуйте!\n\n'
+                    f'Вы запросили изменение email для аккаунта SmartTo-DoList.\n\n'
+                    f'Перейдите по ссылке, чтобы подтвердить новый адрес:\n{confirm_url}\n\n'
+                    'Если вы не делали этот запрос, просто проигнорируйте это письмо.\n'
+                )
+                send_email(to_email=new_email, subject=subject, body_text=body_text)
+
+                logger.info(f'Email change request created for user {user_id}')
+                return jsonify({'success': True, 'message': 'На новый email отправлено письмо для подтверждения.'})
 
         db.session.commit()
         logger.debug(f"Profile updated for user {user_id}")
@@ -149,3 +180,32 @@ def edit_profile():
         db.session.rollback()
         logger.error(f"Error editing profile: {str(e)}")
         return jsonify({'error': 'Ошибка при редактировании профиля'}), 500
+
+
+@account_bp.route('/confirm-email', methods=['GET'])
+def confirm_email():
+    token = request.args.get('token', '').strip()
+    if not token:
+        return redirect(url_for('account.settings'))
+
+    request_row = EmailChangeRequest.query.filter_by(token=token, used=False).first()
+    if not request_row or request_row.expires_at < datetime.utcnow():
+        return redirect(url_for('account.settings'))
+
+    user = User.query.get(request_row.user_id)
+    if not user:
+        return redirect(url_for('auth.login'))
+
+    old_email = user.email
+    with db.session.begin():
+        user.email = request_row.new_email
+        request_row.used = True
+
+    notification_subject = 'SmartTo-DoList: email изменён'
+    notification_body = (
+        'Ваш email в SmartTo-DoList был успешно обновлён.\n\n'
+        'Если это были не вы, обратитесь в службу поддержки.\n'
+    )
+    send_email(to_email=old_email, subject=notification_subject, body_text=notification_body)
+
+    return redirect(url_for('account.settings'))

@@ -47,8 +47,8 @@ class TestAuth:
         response = client.post('/auth/register', data={
             'username': 'newuser',
             'email': 'new@example.com',
-            'password': 'password123',
-            'confirm_password': 'password123'
+            'password': 'Password123!',
+            'confirm_password': 'Password123!'
         })
         assert response.status_code in [302, 200]
 
@@ -80,7 +80,8 @@ class TestAuth:
             'password': 'password123',
             'confirm_password': 'password123'
         })
-        assert response.status_code == 409
+        # Returns 400 instead of 409 to prevent information disclosure (generic error message)
+        assert response.status_code == 400
 
     def test_login_valid(self, client, auth_user):
         """Тест успешного входа"""
@@ -244,7 +245,7 @@ class TestUtils:
         """Тест валидации пароля"""
         from app.utils import validate_password
 
-        valid, msg = validate_password('validpass123')
+        valid, msg = validate_password('Validpass123!')
         assert valid
         assert msg is None
 

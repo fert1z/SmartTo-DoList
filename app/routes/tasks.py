@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
 from app.models import Task, User
 from app import db
+from app.limiter import limiter
 from app.utils import require_login
 import logging
 
@@ -26,6 +27,7 @@ def _parse_due_date(raw):
 
 @tasks_bp.route('/new', methods=['GET', 'POST'])
 @require_login
+@limiter.limit('30 per minute')
 def create_task():
     """Создание новой задачи"""
     if request.method == 'POST':
@@ -78,6 +80,7 @@ def create_task():
 
 @tasks_bp.route('/list', methods=['GET'])
 @require_login
+@limiter.limit('60 per minute')
 def list_tasks():
     """Получение списка задач пользователя"""
     try:
@@ -103,6 +106,7 @@ def list_tasks():
 
 @tasks_bp.route('/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
 @require_login
+@limiter.limit('30 per minute')
 def task_detail(task_id):
     """Получение, обновление или удаление задачи"""
     try:
@@ -157,6 +161,7 @@ def task_detail(task_id):
 
 @tasks_bp.route('/<int:task_id>/complete', methods=['POST'])
 @require_login
+@limiter.limit('30 per minute')
 def complete_task(task_id):
     """Отметить задачу как выполненную"""
     try:
