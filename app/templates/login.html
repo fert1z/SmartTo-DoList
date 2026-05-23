@@ -26,10 +26,10 @@
             <p class="auth-alert auth-alert--error" role="alert">{{ error }}</p>
             {% endif %}
             <form action="/auth/login" method="post" class="auth-form" onsubmit="return validLogin(event);">
-                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                
                 <label for="username">Имя пользователя</label>
                 <input type="text" id="username" name="username" required autocomplete="username">
-
                 <label for="password">Пароль</label>
                 <input type="password" id="password" name="password" required autocomplete="current-password">
 

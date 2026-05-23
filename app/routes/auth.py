@@ -52,7 +52,7 @@ def login():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
-@limiter.limit("3 per hour")  # Защита от brute-force регистрации: 3 попытки в час
+#@limiter.limit("3 per hour")  # Защита от brute-force регистрации: 3 попытки в час
 def register():
     """Страница регистрации и обработка регистрации"""
     if request.method == 'POST':
@@ -62,6 +62,7 @@ def register():
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm_password', '')
 
+            print(f"\n На Сервер Пришло: \n USERNAME: '{username}' \n EMAIL: '{email}' \n PASS_LEN: {len(password)} \n CONFIRM_LEN: {len(confirm_password)}\n")
             # Валидация полей
             if not all([username, email, password, confirm_password]):
                 flash('Заполните все поля', 'error')

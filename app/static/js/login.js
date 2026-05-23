@@ -1,5 +1,15 @@
 function validLogin(event) {
-    return validatePassword(event) && validateUsername(event);
+    var isPasswordValid = validatePassword(event);
+    var isUsernameValid = validateUsername(event);
+
+    // Если хоть одно поле пустое — принудительно стопаем отправку
+    if (!isPasswordValid || !isUsernameValid) {
+        if (event) event.preventDefault();
+        return false;
+    }
+
+    // Если всё заполнено, даем форме штатно уйти на сервер
+    return true;
 }
 
 function validatePassword(event) {
