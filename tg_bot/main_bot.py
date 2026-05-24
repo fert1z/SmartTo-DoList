@@ -495,5 +495,9 @@ def run_polling():
     except ImportError:
         pass
     b = register_handlers()
+
+    # Запускаем цикл напоминаний
+    _start_reminder_loop()
+
     logger.info('Бот запущен (long polling). Остановка: Ctrl+C')
     b.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)

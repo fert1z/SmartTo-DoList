@@ -25,7 +25,7 @@ cd SmartTo-DoList
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # macOS / Linux
-# .venv\\Scripts\\activate  # Windows
+# .venv\Scripts\activate  # Windows
 ```
 
 3. Установите зависимости:
@@ -40,15 +40,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Отредактируйте `.env`, особенно `SECRET_KEY` и `DATABASE_URL`. Если используется Telegram-бот, задайте `TELEGRAM_BOT_TOKEN`.
+Отредактируйте `.env`, особенно `SECRET_KEY`. Для локальной разработки можно оставить `DATABASE_URL` без изменений.
 
 5. Инициализируйте базу данных:
-
-```bash
-python init_db.py
-```
-
-Или через Flask CLI:
 
 ```bash
 export FLASK_APP=wsgi.py
@@ -57,25 +51,45 @@ flask init-database
 
 6. Запустите приложение:
 
-```bash
-python wsgi.py
-```
-
-Или для разработки:
+**Для разработки (локально):**
 
 ```bash
-python app.py
+export FLASK_APP=wsgi.py
+flask run --debug
 ```
 
-Для продакшен-окружения:
+## Развертывание (Production)
+
+### База данных
+
+Для production-среды **настоятельно рекомендуется использовать PostgreSQL** вместо SQLite. Бесплатные PaaS-сервисы (например, Render, Heroku) имеют эфемерную файловую систему, что приведет к **потере всех данных** в SQLite при каждом перезапуске или обновлении сервера.
+
+1.  Создайте внешнюю базу данных PostgreSQL (например, на [Render](https://render.com/docs/databases#creating-a-database) или [ElephantSQL](https://www.elephantsql.com/)).
+2.  Получите URL для подключения к вашей базе данных.
+3.  Установите этот URL в качестве переменной окружения `DATABASE_URL` на вашем хостинге.
+
+Приложение автоматически определит и будет использовать `DATABASE_URL`.
+
+### Запуск в продакшене
+
+**С помощью Gunicorn:**
 
 ```bash
 gunicorn wsgi:app
 ```
 
+**С помощью скрипта `start.sh`:**
+
+Скрипт `start.sh` запускает и веб-сервер (через Gunicorn), и Telegram-бота. Это удобный способ для простого развертывания.
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+
 ## Telegram-бот (опционально)
 
-Запустите Telegram-бота, если вы настроили `TELEGRAM_BOT_TOKEN`:
+Запустите Telegram-бота, если вы настроили `TELEGRAM_BOT_TOKEN` (не требуется, если вы используете скрипт `start.sh`):
 
 ```bash
 python -m tg_bot.run
@@ -87,7 +101,7 @@ python -m tg_bot.run
 
 - `SECRET_KEY` — обязательный ключ для Flask-сессий
 - `FLASK_ENV` — `development`, `production`, `testing`
-- `DATABASE_URL` — адрес базы данных, по умолчанию `sqlite:///instance/users.db`
+- `DATABASE_URL` — адрес базы данных, по умолчанию `sqlite:///instance/users.db`. **Обязательно установите для продакшена!**
 - `TELEGRAM_BOT_TOKEN` — токен Telegram-бота
 - `TELEGRAM_API_URL` — URL API Telegram (`https://api.telegram.org`)
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER` — SMTP-параметры для отправки почты
@@ -108,10 +122,10 @@ python -m tg_bot.run
 
 ## Полезные команды
 
-- `python init_db.py` — создать базу данных
-- `python wsgi.py` — запустить приложение
-- `python app.py` — запустить приложение в режиме разработки
-- `export FLASK_APP=wsgi.py && flask init-database` — инициализация БД через Flask CLI
+- `./start.sh` — запуск приложения (gunicorn) и Telegram-бота
+- `export FLASK_APP=wsgi.py && flask init-database` — создание базы данных
+- `export FLASK_APP=wsgi.py && flask run --debug` — запустить приложение в режиме разработки
+- `gunicorn wsgi:app` — запустить приложение для продакшена
 - `python -m tg_bot.run` — запустить Telegram-бота
 - `.venv/bin/python -m pytest -q` — запустить тесты
 
@@ -119,19 +133,12 @@ python -m tg_bot.run
 
 - `app/` — основной код Flask-приложения
 - `tg_bot/` — Telegram-бот и связанные утилиты
-- `templates/`, `app/templates/` — HTML-шаблоны
-- `static/`, `app/static/` — стили и скрипты
+- `app/templates/` — HTML-шаблоны
+- `app/static/` — стили и скрипты
+- `start.sh` — скрипт для одновременного запуска веб-сервера и бота
 - `wsgi.py` — WSGI-точка входа для сервера
-- `app.py` — упрощённый запуск для разработки
-- `init_db.py` — создание и инициализация базы данных
+- `init_db.py` — утилита для создания базы данных (устарела, используйте flask init-database)
 - `tests/` — тесты pytest
-
-## Вклад
-
-1. Форкните репозиторий
-2. Создайте ветку `feature/...`
-3. Сделайте коммит и отправьте изменения
-4. Откройте Pull Request
 
 ## Лицензия
 
