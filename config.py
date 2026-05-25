@@ -74,7 +74,7 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
 
     # Database - поддержка как старого, так и нового формата PostgreSQL
-    _db_url = os.environ.get('DATABASE_URL', '')
+    _db_url = os.environ.get('DATABASE_URL', '').strip()
     if _db_url:
         # Убеждаемся, что используется правильный драйвер psycopg3
         if _db_url.startswith('postgres://'):
@@ -88,7 +88,7 @@ class ProductionConfig(Config):
         SQLALCHEMY_DATABASE_URI = os.environ.get(
             'DATABASE_URL',
             'sqlite:///' + os.path.join(BASEDIR, 'instance', 'users.db')
-        )
+        ).strip()
 
 
 class TestingConfig(Config):
