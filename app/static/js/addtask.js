@@ -1,4 +1,4 @@
-// Добавление задачи через POST /tasks/new
+// Добавление задачи через POST /api/tasks
 
 document.addEventListener('DOMContentLoaded', function () {
     const addTaskForm = document.getElementById('add-task-form');
@@ -31,7 +31,7 @@ function showFormMessage(text, isError) {
 function handleAddTask() {
     const title = (document.getElementById('task-title') || {}).value || '';
     const description = (document.getElementById('task-description') || {}).value || '';
-    const datetime = (document.getElementById('task-datetime') || {}).value || '';
+    const dueDateString = (document.getElementById('task-datetime') || {}).value || ''; // Теперь это текстовая строка
     const priorityEl = document.getElementById('task-priority');
     const priority = priorityEl ? priorityEl.value : 'medium';
     const categoryEl = document.getElementById('task-category');
@@ -42,24 +42,14 @@ function handleAddTask() {
         return;
     }
 
-    if (datetime) {
-        const selected = new Date(datetime);
-        const now = new Date();
-        if (!isNaN(selected.getTime()) && selected <= now) {
-            showFormMessage('Укажите дату и время в будущем или оставьте поле пустым.', true);
-            return;
-        }
-    }
-
     const params = new URLSearchParams({
         title: title.trim(),
         description: description,
         priority: priority,
         category: category,
     });
-    if (datetime) {
-        params.set('task-datetime', datetime);
-        params.set('due_date', datetime); // Добавлено для совместимости с API
+    if (dueDateString) {
+        params.set('due_date', dueDateString);
     }
 
     // Получаем CSRF токен из meta-тега

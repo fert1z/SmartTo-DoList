@@ -5,6 +5,7 @@ import os
 import logging
 import time
 from typing import Optional
+from datetime import datetime, timezone
 
 import requests
 
@@ -24,6 +25,63 @@ def _openai_api_key() -> str:
 
 def _openai_model() -> str:
     return os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL).strip() or DEFAULT_OPENAI_MODEL
+
+
+def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Optional[datetime]:
+    """
+    Parses a natural language string into a UTC datetime object using OpenAI.
+    Returns None if parsing fails.
+    """
+    api_key = _openai_api_key()
+    if not api_key or not text:
+        return None
+
+    model = _openai_model()
+    now_utc = datetime.now(timezone.utc)
+    
+    prompt = (
+        "You are a time parsing assistant. Your task is to convert a natural language query about time into a precise ISO 8601 datetime string in UTC.\n"
+        "The user is in the timezone: {user_timezone}.\n"
+        "The current UTC time is: {now_utc_iso}.\n"
+        "The user's query is: '{text}'.\n"
+        "Based on this, what is the exact UTC datetime the user is referring to?\n"
+        "Respond ONLY with the ISO 8601 string (e.g., 'YYYY-MM-DDTHH:MM:SSZ') and nothing else. If the query is not a valid time, respond with 'None'."
+    ).format(user_timezone=user_timezone, now_utc_iso=now_utc.isoformat(), text=text)
+
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are a precise time parsing engine."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.0,
+        "max_tokens": 50,
+    }
+
+    try:
+        r = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=OPENAI_TIMEOUT,
+        )
+        r.raise_for_status()
+        data = r.json()
+        result_text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
+
+        if result_text and result_text.lower() != 'none':
+            # Clean up potential markdown backticks
+            result_text = result_text.replace('`', '').strip()
+            # OpenAI might return 'Z' or '+00:00'. Standardize by replacing 'Z'.
+            if result_text.endswith('Z'):
+                result_text = result_text[:-1] + '+00:00'
+            return datetime.fromisoformat(result_text)
+            
+    except (requests.RequestException, ValueError, IndexError) as e:
+        logger.error("OpenAI time parsing failed: %s", str(e))
+    
+    return None
 
 
 def generate_reminder_text(

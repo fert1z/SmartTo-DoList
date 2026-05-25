@@ -7,21 +7,22 @@ REST API маршруты для работы с задачами.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, session
 
 from app import db
-from app.models import Task
+from app.models import Task, User
 from app.utils import require_login
+from app.openai_reminders import parse_natural_time_with_openai
 
 logger = logging.getLogger(__name__)
 
 api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 
 
-def _parse_due_date(raw: object) -> datetime | None:
-    """Парсинг значений datetime-local или ISO; пустое — None."""
+def _parse_due_date(raw: object, user_timezone: str = 'UTC') -> datetime | None:
+    """Парсинг значений ISO или естественного языка (через OpenAI); пустое — None."""
     if raw is None:
         return None
     s = str(raw).strip()
@@ -29,8 +30,20 @@ def _parse_due_date(raw: object) -> datetime | None:
         return None
     s = s.replace('Z', '+00:00')
     try:
-        return datetime.fromisoformat(s)
+        # Сначала пробуем спарсить как ISO формат
+        dt = datetime.fromisoformat(s)
+        # Убеждаемся, что время в UTC, если оно наивное - предполагаем что это локальное время и конвертируем
+        if dt.tzinfo is None:
+            # В идеале здесь нужна конвертация из user_timezone в UTC, но для простоты,
+            # если пришел ISO, мы предполагаем, что фронтенд прислал UTC (как и должно быть).
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
     except ValueError:
+        # Если это не ISO формат, отправляем запрос в OpenAI
+        logger.info(f"Trying to parse natural time: '{s}' with timezone {user_timezone}")
+        parsed_dt = parse_natural_time_with_openai(s, user_timezone)
+        if parsed_dt:
+            return parsed_dt
         return None
 
 
@@ -83,9 +96,12 @@ def create_task_api():
         if category not in ['personal', 'work', 'shopping', 'health', 'other', 'study']:
             category = 'personal'
 
-        due_dt = _parse_due_date(due_date_raw)
+        user = User.query.get(user_id)
+        user_timezone = user.timezone if user and user.timezone else 'UTC'
+
+        due_dt = _parse_due_date(due_date_raw, user_timezone)
         if due_date_raw and str(due_date_raw).strip() and due_dt is None:
-            return jsonify({'error': 'Некорректная дата и время'}), 400
+            return jsonify({'error': 'Не удалось распознать дату и время. Попробуйте написать иначе, например: "завтра в 15:00"'}), 400
 
         task = Task(  # type: ignore[misc]
             title=title,
@@ -148,7 +164,9 @@ def task_detail_api(task_id: int):
                 task.status = new_status
 
         if 'due_date' in data:
-            task.due_date = _parse_due_date(data.get('due_date'))
+            user = User.query.get(user_id)
+            user_timezone = user.timezone if user and user.timezone else 'UTC'
+            task.due_date = _parse_due_date(data.get('due_date'), user_timezone)
 
         if 'category' in data:
             new_category = str(data.get('category', '')).strip().lower()
