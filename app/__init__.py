@@ -108,16 +108,12 @@ def create_app(config_name=None, scheduler_enabled=None):
         return render_template('error500.html'), 500
     
     with app.app_context():
-        if app.config['ENV'] != 'production':
-            # В разработке и тестах создаём таблицы и применяем упрощённые миграции.
-            db.create_all()
-            from app.db_schema import apply_schema_migrations
-            apply_schema_migrations(db)
-        else:
-            app.logger.info(
-                'Production database schema management must be handled externally. '
-                'Skipping create_all() and schema migrations.'
-            )
+        # Временно создаем таблицы при запуске, чтобы решить проблему отсутствия shell
+        app.logger.info("Creating database tables if they don't exist...")
+        db.create_all()
+        from app.db_schema import apply_schema_migrations
+        apply_schema_migrations(db)
+        app.logger.info("Tables created.")
 
         # Планировщик запускается только в основном процессе, не в каждом worker'е Gunicorn.
         if app.config.get('SCHEDULER_ENABLED', True):
