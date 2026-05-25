@@ -3,6 +3,7 @@
 """
 import secrets
 from datetime import datetime, timedelta
+import zoneinfo
 
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 
@@ -57,10 +58,14 @@ def settings():
     try:
         user_id = session.get('user_id')
         user = User.query.get(user_id)
+        
+        # Получаем список всех доступных часовых поясов
+        timezones = sorted(list(zoneinfo.available_timezones()))
 
         return render_template(
             'settings.html',
             user=user,
+            timezones=timezones,
             telegram_linked=user.telegram_user_id is not None if user else False,
             link_ttl_minutes=LINK_CODE_TTL_MINUTES,
         )
@@ -171,6 +176,9 @@ def edit_profile():
 
                 logger.info(f'Email change request created for user {user_id}')
                 return jsonify({'success': True, 'message': 'На новый email отправлено письмо для подтверждения.'})
+
+        if 'timezone' in data:
+            user.timezone = data['timezone']
 
         db.session.commit()
         logger.debug(f"Profile updated for user {user_id}")

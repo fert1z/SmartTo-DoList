@@ -13,6 +13,36 @@
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
+body.dark-theme {
+    /* Темная цветовая палитра */
+    --bg-grad: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    --glass-bg: rgba(30, 41, 59, 0.6);
+    --glass-border: rgba(51, 65, 85, 0.8);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-glow: rgba(59, 130, 246, 0.4);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme input[type="text"],
+body.dark-theme input[type="search"],
+body.dark-theme input[type="email"],
+body.dark-theme input[type="password"],
+body.dark-theme select,
+body.dark-theme textarea {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.5);
+    color: var(--text-main);
+}
+
+body.dark-theme input:focus,
+body.dark-theme textarea:focus,
+body.dark-theme select:focus {
+    background: #1e293b;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background: var(--bg-grad);
@@ -21,6 +51,7 @@ body {
     margin: 0;
     padding: 2rem;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Глобальный контейнер и сетка дашборда */
@@ -65,6 +96,10 @@ body {
 .task-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 15px 35px rgba(100, 110, 140, 0.15), 0 0 20px var(--accent-glow);
+}
+
+body.dark-theme .task-card:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-glow);
 }
 
 .task-card:hover::before {
@@ -145,6 +180,10 @@ body {
     color: #2b7a5a;
 }
 
+body.dark-theme .btn-complete {
+    color: #4ade80;
+}
+
 .btn-complete:hover {
     background: rgba(168, 230, 207, 0.6);
     box-shadow: 0 0 15px rgba(168, 230, 207, 0.4);
@@ -153,6 +192,10 @@ body {
 .btn-delete {
     background: rgba(255, 158, 170, 0.2);
     color: #d9455f;
+}
+
+body.dark-theme .btn-delete {
+    color: #f87171;
 }
 
 .btn-delete:hover {
@@ -170,6 +213,10 @@ body {
     border: 1px dashed #cbd5e1;
     color: var(--text-muted);
     font-weight: 500;
+}
+
+body.dark-theme .empty-state {
+    border-color: #475569;
 }
 
 /* Глобальные стили для форм (поиск, добавление задачи) под новый стиль */

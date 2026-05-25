@@ -10,6 +10,25 @@
     var box = document.getElementById('telegram-code-box');
     var val = document.getElementById('telegram-code-value');
     var msg = document.getElementById('telegram-msg');
+    var themeSwitcher = document.getElementById('theme-switcher');
+
+    // Логика переключения темы
+    if (themeSwitcher) {
+        // Устанавливаем текущее значение из localStorage
+        var currentTheme = localStorage.getItem('theme') || 'light';
+        themeSwitcher.value = currentTheme;
+
+        themeSwitcher.addEventListener('change', function(e) {
+            var newTheme = e.target.value;
+            localStorage.setItem('theme', newTheme);
+            
+            if (newTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+            }
+        });
+    }
 
     function fetchJson(url, init) {
         init = init || {};

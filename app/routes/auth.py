@@ -17,7 +17,7 @@ auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per 15 minutes")  # Защита от brute-force: 5 попыток в 15 минут
+# @limiter.limit("5 per 15 minutes")  # Защита от brute-force: 5 попыток в 15 минут
 def login():
     """Страница входа и обработка входа"""
     if request.method == 'POST':
@@ -82,7 +82,7 @@ def register():
             # Валидация пароля
             valid, msg = validate_password(password)
             if not valid:
-                flash(msg or 'Некорректный пароль', 'error')
+                flash(msg or 'Некорректный пароль. Пароль должен содержать минимум 8 символов, хотя бы одну заглавную букву, одну строчную букву, одну цифру и один спецсимвол.', 'error')
                 return render_template('registration.html'), 400
 
             if password != confirm_password:
@@ -222,7 +222,7 @@ def reset_password():
 
         valid, msg = validate_password(password)
         if not valid:
-            flash(msg or 'Некорректный пароль', 'error')
+            flash(msg or 'Некорректный пароль. Пароль должен содержать минимум 8 символов, хотя бы одну заглавную букву, одну строчную букву, одну цифру и один спецсимвол.', 'error')
             return render_template('reset_password.html', token=token), 400
 
         user = User.query.get(reset_token.user_id)

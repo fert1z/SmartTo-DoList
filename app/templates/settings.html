@@ -69,10 +69,10 @@
         </div>
 
         <div class="setting-group">
-            <label>Тема</label>
-            <select disabled>
-                <option>Светлая</option>
-                <option>Тёмная</option>
+            <label for="theme-switcher">Тема</label>
+            <select id="theme-switcher">
+                <option value="light">Светлая</option>
+                <option value="dark">Тёмная</option>
             </select>
         </div>
 
@@ -85,4 +85,3 @@
 {% block scripts %}
 <script src="/static/js/settings.js"></script>
 {% endblock %}
-
