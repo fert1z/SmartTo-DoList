@@ -199,10 +199,16 @@ function renderTasks(tasks) {
 }
 
 function completeTask(taskId) {
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
     fetch('/api/tasks/' + taskId + '/complete', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: { 
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
     })
         .then(function (r) {
             if (r.status === 401) {
@@ -228,10 +234,16 @@ function completeTask(taskId) {
 function deleteTask(taskId) {
     if (!confirm('Удалить эту задачу?')) return;
 
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
+
     fetch('/api/tasks/' + taskId, {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
+        headers: { 
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
     })
         .then(function (r) {
             if (r.status === 401) {

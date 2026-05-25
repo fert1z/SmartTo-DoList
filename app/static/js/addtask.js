@@ -59,12 +59,20 @@ function handleAddTask() {
     });
     if (datetime) {
         params.set('task-datetime', datetime);
+        params.set('due_date', datetime); // Добавлено для совместимости с API
     }
+
+    // Получаем CSRF токен из meta-тега
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
 
     fetch('/api/tasks', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
         body: params,
     })
         .then(function (response) {
