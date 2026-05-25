@@ -10,15 +10,6 @@
     {% block head_css %}{% endblock %}
 </head>
 <body>
-    <script>
-        // Небольшой скрипт для применения темы до загрузки DOM, чтобы избежать "мигания"
-        (function() {
-            var theme = localStorage.getItem('theme');
-            if (theme === 'dark') {
-                document.body.classList.add('dark-theme');
-            }
-        })();
-    </script>
     <header>
         <div class="header-top">
             <h1><a href="/">SmartTo-DoList</a></h1>
@@ -41,6 +32,7 @@
 
     {% block content %}{% endblock %}
 
+    <script src="/static/js/main.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
