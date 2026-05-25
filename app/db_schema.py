@@ -24,6 +24,11 @@ def apply_schema_migrations(db):
                         'ON users (telegram_user_id)'
                     )
                 )
+        
+        # Расширяем столбец пароля для поддержки длинных хешей scrypt (только для Postgres)
+        if dialect == 'postgresql':
+            with bind.begin() as conn:
+                conn.execute(text('ALTER TABLE users ALTER COLUMN password TYPE VARCHAR(256)'))
 
     # reminder_logs (если таблица отсутствует — пусть create_all её создаст,
     # но если по какой-то причине её не создало, добавим минимальную структуру).
