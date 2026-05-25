@@ -16,7 +16,7 @@ from flask_migrate import Migrate
 
 # Создаем приложение
 app = create_app(
-    config_name=os.getenv('FLASK_CONFIG') or os.getenv('FLASK_ENV') or 'production',
+    config_name='testing',  # ВРЕМЕННО ДЛЯ ДИАГНОСТИКИ
     scheduler_enabled=False,
 )
 migrate = Migrate(app, db)
