@@ -5,6 +5,7 @@
         return;
     }
 
+    var settingsForm = document.querySelector('.settings-form');
     var btnCode = document.getElementById('btn-telegram-code');
     var btnUnlink = document.getElementById('btn-telegram-unlink');
     var box = document.getElementById('telegram-code-box');
@@ -14,9 +15,12 @@
 
     // Логика переключения темы
     if (themeSwitcher) {
-        // Устанавливаем текущее значение из localStorage
         var currentTheme = localStorage.getItem('theme') || 'light';
         themeSwitcher.value = currentTheme;
+        // Применяем тему при загрузке, если ее нет в body
+        if (currentTheme === 'dark' && !document.body.classList.contains('dark-theme')) {
+            document.body.classList.add('dark-theme');
+        }
 
         themeSwitcher.addEventListener('change', function(e) {
             var newTheme = e.target.value;
@@ -27,6 +31,30 @@
             } else {
                 document.body.classList.remove('dark-theme');
             }
+        });
+    }
+
+    // Перехват отправки формы настроек
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(settingsForm);
+            var data = Object.fromEntries(formData.entries());
+
+            fetchJson('/account/edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) {
+                alert(response.message || 'Настройки сохранены!');
+                window.location.reload();
+            })
+            .catch(function(err) {
+                alert(err.error || 'Произошла ошибка');
+            });
         });
     }
 
