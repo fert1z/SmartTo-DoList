@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 import os
 from pathlib import Path
-
+import sys
 
 def setup_logging(app):
     """Настраивает логирование для приложения"""
@@ -49,12 +49,11 @@ def setup_logging(app):
     error_handler.setFormatter(formatter)
     error_handler.setLevel(logging.ERROR)
 
-    # Обработчик консоли (только для разработки)
-    if app.debug:
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        console_handler.setLevel(logging.DEBUG)
-        app.logger.addHandler(console_handler)
+    # Обработчик консоли (теперь ВСЕГДА включен для облачных хостингов)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
+    app.logger.addHandler(console_handler)
 
     # Добавляем обработчики
     app.logger.addHandler(file_handler)
@@ -62,6 +61,7 @@ def setup_logging(app):
     app.logger.setLevel(logging.INFO)
 
     # Настраиваем логирование для модулей
+    logging.getLogger('app').addHandler(console_handler)
     logging.getLogger('app').addHandler(file_handler)
     logging.getLogger('app').addHandler(error_handler)
     logging.getLogger('app').setLevel(logging.INFO)
