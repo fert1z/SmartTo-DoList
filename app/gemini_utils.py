@@ -2,7 +2,8 @@ import os
 import logging
 from typing import Optional
 from datetime import datetime, timezone
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import html
 
 logger = logging.getLogger(__name__)
@@ -26,9 +27,7 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
         return None
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
-        
+        client = genai.Client(api_key=api_key)
         now_utc = datetime.now(timezone.utc)
         
         prompt = (
@@ -49,9 +48,10 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
             f"Query: '{text}' -> Result: "
         )
 
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.0,
             )
         )
@@ -97,8 +97,7 @@ def generate_reminder_text_with_gemini(
         return fallback_text
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        client = genai.Client(api_key=api_key)
 
         prompt = (
             "Ты — дружелюбный ассистент в боте-планировщике. Сгенерируй ОЧЕНЬ короткое (1-2 предложения) напоминание для Telegram на русском языке.\n"
@@ -111,9 +110,10 @@ def generate_reminder_text_with_gemini(
             "Текст напоминания:"
         )
 
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.7,
                 max_output_tokens=150,
             )
