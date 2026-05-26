@@ -40,23 +40,32 @@ def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Opt
     now_utc = datetime.now(timezone.utc)
     
     prompt = (
-        "You are a time parsing assistant. Your task is to convert a natural language query about time into a precise ISO 8601 datetime string in UTC.\n"
-        "The user is in the timezone: {user_timezone}.\n"
-        "The current UTC time is: {now_utc_iso}.\n"
-        "The user's query is: '{text}'.\n"
-        "Based on this, what is the exact UTC datetime the user is referring to?\n"
-        "Respond ONLY with the ISO 8601 string (e.g., 'YYYY-MM-DDTHH:MM:SSZ') and nothing else. If the query is not a valid time, respond with 'None'."
+        "You are an expert at extracting dates and times from natural language Russian text and converting them into strict ISO 8601 format in UTC.\n\n"
+        "RULES:\n"
+        "1. The user's local timezone is {user_timezone}.\n"
+        "2. The current exact UTC time is {now_utc_iso}.\n"
+        "3. You must interpret the user's text relative to this current time and their timezone.\n"
+        "4. Output ONLY the calculated ISO 8601 datetime string in UTC format (e.g., 'YYYY-MM-DDTHH:MM:SS+00:00').\n"
+        "5. If the time is not specified (e.g., just 'завтра'), assume 09:00 AM in the user's local timezone.\n"
+        "6. If the text does not contain any recognizable time or date, output ONLY the word 'None'.\n"
+        "7. Do not include markdown formatting, backticks, or any explanations.\n\n"
+        "EXAMPLES:\n"
+        "- Current UTC: 2026-05-25T08:00:00+00:00, User TZ: Europe/Moscow (UTC+3, so local is 11:00). Query: 'завтра в 10' -> Result: 2026-05-26T07:00:00+00:00\n"
+        "- Current UTC: 2026-05-25T08:00:00+00:00, User TZ: Europe/Moscow. Query: 'через 2 часа' -> Result: 2026-05-25T10:00:00+00:00\n"
+        "- Current UTC: 2026-05-25T08:00:00+00:00, User TZ: UTC. Query: 'купить хлеб' -> Result: None\n\n"
+        "ACTUAL REQUEST:\n"
+        "Query: '{text}' -> Result: "
     ).format(user_timezone=user_timezone, now_utc_iso=now_utc.isoformat(), text=text)
 
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a precise time parsing engine."},
+            {"role": "system", "content": "You are a precise time parsing engine. You output only ISO 8601 strings or 'None'."},
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.0,
-        "max_tokens": 50,
+        "max_tokens": 30,
     }
 
     try:
@@ -76,10 +85,18 @@ def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Opt
             # OpenAI might return 'Z' or '+00:00'. Standardize by replacing 'Z'.
             if result_text.endswith('Z'):
                 result_text = result_text[:-1] + '+00:00'
-            return datetime.fromisoformat(result_text)
+            
+            # Additional validation: check if it's a valid ISO format
+            parsed_date = datetime.fromisoformat(result_text)
+            
+            # Ensure it has timezone info, default to UTC if missing
+            if parsed_date.tzinfo is None:
+                parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                
+            return parsed_date
             
     except (requests.RequestException, ValueError, IndexError) as e:
-        logger.error("OpenAI time parsing failed: %s", str(e))
+        logger.error("OpenAI time parsing failed for input '%s': %s", text, str(e))
     
     return None
 
