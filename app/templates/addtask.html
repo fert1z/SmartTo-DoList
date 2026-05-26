@@ -42,9 +42,17 @@
             </div>
         </div>
 
-        <label for="task-datetime">Срок (необязательно, можно в свободной форме)</label>
-        <input type="text" id="task-datetime" name="due_date" placeholder="Например: завтра в 18:00 или через 2 дня">
-        <p class="field-hint">Если не указать — задача без дедлайна. Поддерживается «завтра», «послезавтра», «через 3 дня».</p>
+        <div class="form-row-2" style="margin-top: 1rem;">
+            <div>
+                <label for="task-datetime-exact">Точный срок (календарь)</label>
+                <input type="datetime-local" id="task-datetime-exact" name="due_date_exact">
+            </div>
+            <div>
+                <label for="task-datetime-smart">ИЛИ «Умный» срок</label>
+                <input type="text" id="task-datetime-smart" name="due_date_smart" placeholder="завтра в 18:00">
+            </div>
+        </div>
+        <p class="field-hint">Если заполнены оба поля, приоритет будет у календаря.</p>
 
         <button type="submit" class="btn-submit-task">Сохранить задачу</button>
     </form>

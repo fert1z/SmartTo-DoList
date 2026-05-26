@@ -1,8 +1,5 @@
 """
 REST API маршруты для работы с задачами.
-
-Предназначено для эндпоинтов вида /api/tasks/* в стиле REST.
-Семантика максимально повторяет старые /tasks/*, но в JSON-формате.
 """
 from __future__ import annotations
 
@@ -21,30 +18,30 @@ logger = logging.getLogger(__name__)
 api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 
 
-def _parse_due_date(raw: object, user_timezone: str = 'UTC') -> datetime | None:
-    """Парсинг значений ISO или естественного языка (через OpenAI); пустое — None."""
-    if raw is None:
-        return None
-    s = str(raw).strip()
-    if not s:
-        return None
-    s = s.replace('Z', '+00:00')
-    try:
-        # Сначала пробуем спарсить как ISO формат
-        dt = datetime.fromisoformat(s)
-        # Убеждаемся, что время в UTC, если оно наивное - предполагаем что это локальное время и конвертируем
-        if dt.tzinfo is None:
-            # В идеале здесь нужна конвертация из user_timezone в UTC, но для простоты,
-            # если пришел ISO, мы предполагаем, что фронтенд прислал UTC (как и должно быть).
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt
-    except ValueError:
-        # Если это не ISO формат, отправляем запрос в OpenAI
-        logger.info(f"Trying to parse natural time: '{s}' with timezone {user_timezone}")
-        parsed_dt = parse_natural_time_with_openai(s, user_timezone)
-        if parsed_dt:
-            return parsed_dt
-        return None
+def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str = 'UTC') -> datetime | None:
+    """
+    Парсит дату. Приоритет у точной даты из календаря.
+    Если она не задана, используется "умный" парсинг через OpenAI.
+    Возвращает datetime объект в UTC.
+    """
+    # Приоритет у точной даты
+    if exact_date_str:
+        try:
+            dt = datetime.fromisoformat(exact_date_str)
+            # Если от браузера пришло "наивное" время, считаем его локальным и конвертируем в UTC
+            # (Это упрощение, в идеале нужно знать timezone браузера)
+            if dt.tzinfo is None:
+                dt = dt.astimezone(timezone.utc)
+            return dt
+        except ValueError:
+            pass  # Если формат неверный, перейдем к умному парсингу
+
+    # Если точная дата не задана, пробуем "умный" парсинг
+    if smart_date_str:
+        logger.info(f"Trying to parse natural time: '{smart_date_str}' with timezone {user_timezone}")
+        return parse_natural_time_with_openai(smart_date_str, user_timezone)
+
+    return None
 
 
 def _task_to_json(task: Task) -> dict:
@@ -84,7 +81,9 @@ def create_task_api():
         description = str(data.get('description', '')).strip()
         priority = str(data.get('priority', 'medium')).strip().lower()
         category = str(data.get('category', 'personal')).strip().lower()
-        due_date_raw = data.get('due_date')
+        
+        due_date_exact = data.get('due_date_exact')
+        due_date_smart = data.get('due_date_smart')
 
         if not title:
             return jsonify({'error': 'Название задачи обязательно'}), 400
@@ -99,11 +98,11 @@ def create_task_api():
         user = User.query.get(user_id)
         user_timezone = user.timezone if user and user.timezone else 'UTC'
 
-        due_dt = _parse_due_date(due_date_raw, user_timezone)
-        if due_date_raw and str(due_date_raw).strip() and due_dt is None:
-            return jsonify({'error': 'Не удалось распознать дату и время. Попробуйте написать иначе, например: "завтра в 15:00"'}), 400
+        due_dt = _parse_due_date(due_date_exact, due_date_smart, user_timezone)
+        if (due_date_exact or due_date_smart) and due_dt is None:
+            return jsonify({'error': 'Не удалось распознать дату. Попробуйте другой формат или фразу.'}), 400
 
-        task = Task(  # type: ignore[misc]
+        task = Task(
             title=title,
             description=description,
             due_date=due_dt,
@@ -166,7 +165,8 @@ def task_detail_api(task_id: int):
         if 'due_date' in data:
             user = User.query.get(user_id)
             user_timezone = user.timezone if user and user.timezone else 'UTC'
-            task.due_date = _parse_due_date(data.get('due_date'), user_timezone)
+            # Для PUT запросов пока оставляем упрощенную логику, т.к. нет двух полей
+            task.due_date = _parse_due_date(data.get('due_date'), None, user_timezone)
 
         if 'category' in data:
             new_category = str(data.get('category', '')).strip().lower()

@@ -31,7 +31,11 @@ function showFormMessage(text, isError) {
 function handleAddTask() {
     const title = (document.getElementById('task-title') || {}).value || '';
     const description = (document.getElementById('task-description') || {}).value || '';
-    const dueDateString = (document.getElementById('task-datetime') || {}).value || ''; // Теперь это текстовая строка
+    
+    // Получаем значения из обоих полей
+    const dueDateExact = (document.getElementById('task-datetime-exact') || {}).value || '';
+    const dueDateSmart = (document.getElementById('task-datetime-smart') || {}).value || '';
+    
     const priorityEl = document.getElementById('task-priority');
     const priority = priorityEl ? priorityEl.value : 'medium';
     const categoryEl = document.getElementById('task-category');
@@ -48,8 +52,13 @@ function handleAddTask() {
         priority: priority,
         category: category,
     });
-    if (dueDateString) {
-        params.set('due_date', dueDateString);
+    
+    // Отправляем оба значения, сервер сам разберется с приоритетом
+    if (dueDateExact) {
+        params.set('due_date_exact', dueDateExact);
+    }
+    if (dueDateSmart) {
+        params.set('due_date_smart', dueDateSmart);
     }
 
     // Получаем CSRF токен из meta-тега
