@@ -3,7 +3,7 @@ import re
 from functools import wraps
 from flask import session, redirect, url_for, jsonify, request
 from email_validator import validate_email, EmailNotValidError
-
+from datetime import datetime
 
 def validate_email_format(email):
     """Валидирует формат email"""
@@ -76,4 +76,3 @@ def format_datetime_for_user(dt, timezone_str='UTC'):
         return dt.strftime('%d.%m.%Y %H:%M')
     except Exception:
         return str(dt)
-

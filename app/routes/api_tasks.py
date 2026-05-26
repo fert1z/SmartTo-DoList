@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, request, session
 from app import db
 from app.models import Task, User
 from app.utils import require_login
-from app.gemini_utils import parse_natural_time_with_gemini  # ИЗМЕНЕНО
+from app.openai_parser import parse_natural_time_with_openai
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str = 'UTC') -> datetime | None:
     """
     Парсит дату. Приоритет у точной даты из календаря.
-    Если она не задана, используется "умный" парсинг через Gemini.
+    Если она не задана, используется "умный" парсинг через OpenAI.
     Возвращает datetime объект в UTC.
     """
     # Приоритет у точной даты
@@ -36,8 +36,8 @@ def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str
 
     # Если точная дата не задана, пробуем "умный" парсинг
     if smart_date_str:
-        logger.info(f"Trying to parse natural time with Gemini: '{smart_date_str}' with timezone {user_timezone}")
-        return parse_natural_time_with_gemini(smart_date_str, user_timezone)
+        logger.info(f"Trying to parse natural time with OpenAI: '{smart_date_str}' with timezone {user_timezone}")
+        return parse_natural_time_with_openai(smart_date_str, user_timezone)
 
     return None
 
@@ -163,6 +163,7 @@ def task_detail_api(task_id: int):
         if 'due_date' in data:
             user = User.query.get(user_id)
             user_timezone = user.timezone if user and user.timezone else 'UTC'
+            # Для PUT запросов пока оставляем упрощенную логику
             task.due_date = _parse_due_date(data.get('due_date'), None, user_timezone)
 
         if 'category' in data:
