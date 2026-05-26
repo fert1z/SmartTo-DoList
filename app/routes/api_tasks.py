@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, request, session
 from app import db
 from app.models import Task, User
 from app.utils import require_login
-from app.openai_reminders import parse_natural_time_with_openai
+from app.gemini_utils import parse_natural_time_with_gemini  # ИЗМЕНЕНО
 
 logger = logging.getLogger(__name__)
 
@@ -21,25 +21,23 @@ api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str = 'UTC') -> datetime | None:
     """
     Парсит дату. Приоритет у точной даты из календаря.
-    Если она не задана, используется "умный" парсинг через OpenAI.
+    Если она не задана, используется "умный" парсинг через Gemini.
     Возвращает datetime объект в UTC.
     """
     # Приоритет у точной даты
     if exact_date_str:
         try:
             dt = datetime.fromisoformat(exact_date_str)
-            # Если от браузера пришло "наивное" время, считаем его локальным и конвертируем в UTC
-            # (Это упрощение, в идеале нужно знать timezone браузера)
             if dt.tzinfo is None:
                 dt = dt.astimezone(timezone.utc)
             return dt
         except ValueError:
-            pass  # Если формат неверный, перейдем к умному парсингу
+            pass
 
     # Если точная дата не задана, пробуем "умный" парсинг
     if smart_date_str:
-        logger.info(f"Trying to parse natural time: '{smart_date_str}' with timezone {user_timezone}")
-        return parse_natural_time_with_openai(smart_date_str, user_timezone)
+        logger.info(f"Trying to parse natural time with Gemini: '{smart_date_str}' with timezone {user_timezone}")
+        return parse_natural_time_with_gemini(smart_date_str, user_timezone)
 
     return None
 
@@ -165,7 +163,6 @@ def task_detail_api(task_id: int):
         if 'due_date' in data:
             user = User.query.get(user_id)
             user_timezone = user.timezone if user and user.timezone else 'UTC'
-            # Для PUT запросов пока оставляем упрощенную логику, т.к. нет двух полей
             task.due_date = _parse_due_date(data.get('due_date'), None, user_timezone)
 
         if 'category' in data:
