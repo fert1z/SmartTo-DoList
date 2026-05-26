@@ -46,7 +46,8 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
             f"Query: '{text}' -> Result: "
         )
 
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+        # Используем v1beta и актуальную модель gemini-1.5-flash
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -119,7 +120,7 @@ def generate_reminder_text_with_gemini(
             "Текст напоминания:"
         )
 
-        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         headers = {'Content-Type': 'application/json'}
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
