@@ -6,15 +6,15 @@ main {
 #hero {
     text-align: center;
     padding: 2.5rem 1rem 2rem;
-    background: linear-gradient(180deg, #f3e5f5 0%, #fff 100%);
+    background: var(--bg-card);
     border-radius: 16px;
     margin-bottom: 2rem;
-    border: 1px solid #e1bee7;
+    border: 1px solid var(--border-color);
 }
 
 #hero h2 {
     font-size: clamp(1.35rem, 4vw, 1.85rem);
-    color: #4527a0;
+    color: var(--text-main);
     margin: 0 0 1rem;
     border: none;
     padding: 0;
@@ -22,7 +22,7 @@ main {
 }
 
 #hero p {
-    color: #5e35b1;
+    color: var(--text-muted);
     max-width: 36rem;
     margin: 0 auto 1.5rem;
     font-size: 1.05rem;
@@ -33,20 +33,20 @@ main {
 #try-it-now-btn {
     display: inline-block;
     padding: 0.85rem 1.75rem;
-    background: linear-gradient(135deg, #5c6bc0 0%, #7e57c2 100%);
-    color: #fff !important;
+    background: var(--text-link);
+    color: white !important;
     text-decoration: none !important;
     border-radius: 999px;
     font-weight: 700;
     font-size: 1rem;
-    box-shadow: 0 4px 18px rgba(94, 53, 177, 0.35);
+    box-shadow: var(--shadow-soft);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 #hero .button:hover,
 #try-it-now-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 22px rgba(94, 53, 177, 0.45);
+    filter: brightness(1.1);
 }
 
 #features,
@@ -57,7 +57,7 @@ main {
 #features h3,
 #audience h3 {
     font-size: 1.2rem;
-    color: #3949ab;
+    color: var(--text-main);
     margin-bottom: 1rem;
 }
 
@@ -74,11 +74,11 @@ main {
 #list_func li,
 #list_fihe li,
 #list_audience li {
-    background: #fff;
+    background: var(--bg-card);
     padding: 0.75rem 1rem;
     border-radius: 8px;
-    border-left: 4px solid #7e57c2;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--text-link);
+    box-shadow: var(--shadow-soft);
 }
 
 @media (min-width: 640px) {
@@ -97,6 +97,6 @@ main {
 body > main > hr {
     border: none;
     height: 1px;
-    background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+    background: var(--border-color);
     margin: 1.5rem 0;
 }

@@ -6,11 +6,11 @@
 }
 
 .auth-card {
-    background: #fff;
+    background: var(--bg-card);
     border-radius: 16px;
     padding: 2rem 1.75rem;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    border: 1px solid #eee;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
 }
 
 .auth-card--wide {
@@ -21,7 +21,7 @@
     text-align: center;
     margin: 0 0 1.25rem;
     font-size: 1.5rem;
-    color: #5c6bc0;
+    color: var(--text-link);
     border: none;
     padding: 0;
 }
@@ -34,16 +34,16 @@
 }
 
 .auth-alert--error {
-    background: #ffebee;
-    color: #c62828;
-    border: 1px solid #ef9a9a;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .auth-form label {
     display: block;
     margin-bottom: 0.35rem;
     font-weight: 600;
-    color: #424242;
+    color: var(--text-main);
     font-size: 0.9rem;
 }
 
@@ -53,25 +53,27 @@
     width: 100%;
     padding: 0.65rem 0.85rem;
     margin-bottom: 1rem;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 1rem;
     box-sizing: border-box;
     font-family: inherit;
+    background: var(--bg-main);
+    color: var(--text-main);
 }
 
 .auth-form input:focus {
     outline: none;
-    border-color: #7e57c2;
-    box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.12);
+    border-color: var(--text-link);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .auth-submit {
     width: 100%;
     margin-top: 0.5rem;
     padding: 0.75rem 1rem;
-    background: linear-gradient(135deg, #5c6bc0 0%, #7e57c2 100%);
-    color: #fff;
+    background: var(--text-link);
+    color: white;
     border: none;
     border-radius: 8px;
     font-weight: 600;
@@ -81,7 +83,7 @@
 }
 
 .auth-submit:hover {
-    filter: brightness(1.05);
+    filter: brightness(1.1);
 }
 
 .auth-submit:active {
@@ -92,10 +94,11 @@
     margin: 1.25rem 0 0;
     text-align: center;
     font-size: 0.9rem;
-    color: #616161;
+    color: var(--text-muted);
     line-height: 1.7;
 }
 
 .auth-footer a {
     font-weight: 600;
+    color: var(--text-link);
 }
