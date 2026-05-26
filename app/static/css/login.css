@@ -1,42 +1,25 @@
 /* Auth: вход и регистрация */
 
 @keyframes slideUpFade {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 .auth-main {
     max-width: 440px;
-    margin: 4rem auto 3rem;
+    margin: 4rem auto;
     padding: 0 1.25rem;
-    perspective: 1000px;
 }
 
 .auth-card {
     background: var(--bg-card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-radius: var(--radius);
     padding: 2.5rem 2rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), 0 0 20px var(--accent-glow);
+    box-shadow: var(--shadow-soft);
     border: 1px solid var(--border-color);
-    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    position: relative;
-    overflow: hidden;
-}
-
-.auth-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
-}
-
-.auth-card--wide {
-    max-width: 100%;
+    animation: slideUpFade 0.5s ease-out forwards;
 }
 
 .auth-title {
@@ -45,47 +28,55 @@
     font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-main);
-    border: none;
-    padding: 0;
-    letter-spacing: -0.02em;
-}
-
-.auth-alert {
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.25rem;
-    font-size: 0.95rem;
-    animation: slideUpFade 0.3s ease-out forwards;
 }
 
 .auth-alert--error {
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.25rem;
 }
 
 .auth-form label {
     display: block;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
     font-weight: 600;
     color: var(--text-main);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .auth-form input[type="text"],
 .auth-form input[type="email"],
 .auth-form input[type="password"] {
+    display: block;
     width: 100%;
     padding: 0.75rem 1rem;
-    margin-bottom: 1.25rem;
     border: 1px solid var(--border-color);
     border-radius: 10px;
     font-size: 1rem;
     box-sizing: border-box;
     font-family: inherit;
-    background: var(--bg-main);
+    background-color: var(--bg-main);
     color: var(--text-main);
     transition: var(--transition);
+}
+
+/* Убираем иконки автозаполнения от браузера */
+.auth-form input::-webkit-contacts-auto-fill-button,
+.auth-form input::-webkit-credentials-auto-fill-button {
+    visibility: hidden;
+    display: none !important;
+    pointer-events: none;
+    height: 0;
+    width: 0;
+    margin: 0;
 }
 
 .auth-form input:focus {
@@ -95,9 +86,16 @@
     background: var(--bg-card);
 }
 
+.field-hint {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
 .auth-submit {
     width: 100%;
-    margin-top: 0.75rem;
+    margin-top: 1rem;
     padding: 0.85rem 1rem;
     background: var(--text-link);
     color: white;
@@ -106,14 +104,14 @@
     font-weight: 600;
     font-size: 1.05rem;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2);
+    transition: all 0.2s ease;
 }
 
 .auth-submit:hover {
     filter: brightness(1.1);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
 }
 
 .auth-submit:active {
@@ -121,28 +119,18 @@
 }
 
 .auth-footer {
-    margin: 1.5rem 0 0;
+    margin-top: 1.5rem;
     text-align: center;
     font-size: 0.95rem;
     color: var(--text-muted);
-    line-height: 1.7;
 }
 
 .auth-footer a {
     font-weight: 600;
     color: var(--text-link);
     text-decoration: none;
-    transition: opacity 0.2s;
 }
 
 .auth-footer a:hover {
-    opacity: 0.8;
     text-decoration: underline;
-}
-
-.field-hint {
-    margin: -0.75rem 0 1.25rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    line-height: 1.4;
 }
