@@ -1,335 +1,117 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>О проекте - SmartTo-DoList</title>
-    <link rel="stylesheet" href="/static/css/navigation.css">
-    <link rel="stylesheet" href="/static/css/main_page.css">
-</head>
-<body>
-    <header>
-        <div class="header-top">
-            <h1><a href="/">SmartTo-DoList</a></h1>
-            <nav>
-                <a href="/">Главная</a>
-                <a href="/about">О проекте</a>
-                <a href="/auth/login">Войти</a>
-                <a href="/auth/register">Регистрация</a>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
 
-    <main>
-        <!-- Project Description Section -->
-        <section class="about-section">
-            <h2>О проекте SmartTo-DoList</h2>
-            <p style="font-size: 16px; line-height: 1.8; color: #555;">
-                <strong>SmartTo-DoList</strong> — это современное веб-приложение для управления задачами и напоминаниями, 
-                с использованием искусственного интеллекта. Наше приложение помогает вам организовать работу, 
-                учёбу и личные дела, не упустив ничего важного.
-            </p>
-            <p style="font-size: 16px; line-height: 1.8; color: #555;">
-                С помощью умных функций вы сможете быстро добавлять задачи, устанавливать приоритеты, получать 
-                своевременные напоминания и синхронизировать все со своим Telegram-ботом.
-            </p>
-        </section>
+{% block title %}О проекте - SmartTo-DoList{% endblock %}
 
-        <!-- Smart Features Section -->
-        <section class="about-section">
-            <h2>🧠 Умные функции</h2>
-            
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>🎯 Умные напоминания</h3>
-                    <p>Система автоматически определяет приоритет ваших задач и напоминает о них в нужный момент. 
-                    Используется анализ вашей деятельности для оптимизации расписания.</p>
-                </div>
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/about.css">
+{% endblock %}
 
-                <div class="feature-card">
-                    <h3>📱 Синхронизация с Telegram</h3>
-                    <p>Получайте уведомления о задачах прямо в Telegram. Бот SmartTo-DoList позволяет вам 
-                    добавлять, отмечать выполненными и управлять задачами прямо из мессенджера.</p>
-                </div>
-
-                <div class="feature-card">
-                    <h3>🗣️ Распознавание речи</h3>
-                    <p>Добавляйте задачи голосом! Просто говорите, что нужно сделать, и нейросеть преобразует 
-                    речь в текст и создаст задачу автоматически.</p>
-                </div>
-
-                <div class="feature-card">
-                    <h3>⏰ Нечёткие сроки</h3>
-                    <p>Вы можете указывать сроки в естественном языке: «на следующей неделе», «в пятницу», 
-                    «через 3 дня» — система сама определит точную дату.</p>
-                </div>
-
-                <div class="feature-card">
-                    <h3>🔔 Умные уведомления</h3>
-                    <p>Система учитывает ваш график работы и повседневную активность, чтобы отправлять 
-                    напоминания в самый подходящий момент.</p>
-                </div>
-
-                <div class="feature-card">
-                    <h3>📊 Статистика и аналитика</h3>
-                    <p>Отслеживайте вашу продуктивность, просматривайте графики выполненных задач и анализируйте 
-                    ваши привычки.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- How to Use Smart Features -->
-        <section class="about-section">
-            <h2>📖 Инструкции по использованию умных функций</h2>
-
-            <div class="instruction-step">
-                <h4>1️⃣ Умные напоминания с приоритетами</h4>
-                <p><strong>Как использовать:</strong></p>
-                <ul style="padding-left: 20px;">
-                    <li>Создайте новую задачу в разделе "Добавить задачу"</li>
-                    <li>Установите приоритет: Высокий, Средний или Низкий</li>
-                    <li>Система автоматически определит оптимальное время напоминания</li>
-                    <li>Вы получите уведомление в браузере и по почте (если подключена)</li>
-                    <li>Сложные задачи система может разбить на подзадачи автоматически</li>
-                </ul>
-                <p style="background-color: #e8f5e9; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                    <strong>💡 Совет:</strong> Не забудьте выбрать категорию задачи («Работа», «Учёба», «Личное») — 
-                    это помогает алгоритму лучше определять приоритеты.
-                </p>
-            </div>
-
-            <div class="instruction-step">
-                <h4>2️⃣ Синхронизация с Telegram</h4>
-                <p><strong>Как настроить:</strong></p>
-                <ol style="padding-left: 20px;">
-                    <li>Откройте Telegram и найдите бота <code style="background-color: #f5f5f5; padding: 3px 6px;">@SmartToDo_bot</code></li>
-                    <li>Нажмите "Начать" (/start)</li>
-                    <li>Свяжите аккаунт с помощью кода из раздела "Настройки" в приложении</li>
-                    <li>Разрешите боту отправлять уведомления</li>
-                    <li>Готово! Теперь вы будете получать напоминания в Telegram</li>
-                </ol>
-                <p style="background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                    <strong>✨ Возможности Telegram-бота:</strong><br>
-                    ✓ Добавлять задачи: просто напишите /add и описание<br>
-                    ✓ Просмотреть список: /list<br>
-                    ✓ Отметить выполненной: /done + номер<br>
-                    ✓ Получать напоминания: /remind<br>
-                    ✓ Синхронизировать данные: /sync
-                </p>
-            </div>
-
-            <div class="instruction-step">
-                <h4>3️⃣ Распознавание речи</h4>
-                <p><strong>Как использовать:</strong></p>
-                <ul style="padding-left: 20px;">
-                    <li>На главной странице нажмите кнопку 🎤 "Добавить голосом"</li>
-                    <li>Дайте браузеру разрешение на использование микрофона</li>
-                    <li>Чётко произнесите вашу задачу (например: "Купить продукты завтра вечером")</li>
-                    <li>Система преобразует речь в текст и создаст задачу</li>
-                    <li>При необходимости отредактируйте текст и сохраните</li>
-                </ul>
-                <p style="background-color: #fff3e0; padding: 15px; border-radius: 4px; margin-top: 15px;">
-                    <strong>⚙️ Поддерживаемые языки:</strong> Русский, Английский, Французский<br>
-                    <strong>💬 Примеры:</strong> "Позвонить маме во вторник", "Купить молоко до конца дня", 
-                    "Подготовить презентацию на неделю"
-                </p>
-            </div>
-
-            <div class="instruction-step">
-                <h4>4️⃣ Нечёткие сроки</h4>
-                <p><strong>Примеры естественного ввода сроков:</strong></p>
-                <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin-top: 10px;">
-                    <p>❌ <code>2026-04-15</code> — обычный ввод</p>
-                    <p>✅ <code>На следующей неделе</code></p>
-                    <p>✅ <code>В пятницу вечером</code></p>
-                    <p>✅ <code>Через 3 дня</code></p>
-                    <p>✅ <code>В понедельник утром</code></p>
-                    <p>✅ <code>Завтра</code></p>
-                    <p>✅ <code>Конец месяца</code></p>
-                </div>
-            </div>
-
-            <div class="instruction-step">
-                <h4>5️⃣ Работа с категориями и метками</h4>
-                <p><strong>Организуйте свои задачи:</strong></p>
-                <ul style="padding-left: 20px;">
-                    <li>Создавайте собственные категории (Проекты, Семья, Здоровье и т.д.)</li>
-                    <li>Используйте метки для быстрой фильтрации (#срочно, #важно, #мечта)</li>
-                    <li>Система будет отправлять отдельные напоминания для каждой категории</li>
-                    <li>На панели управления вы сможете видеть статистику по категориям</li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- FAQ Section -->
-        <section class="about-section">
-            <h2>❓ Часто задаваемые вопросы (FAQ)</h2>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Безопасны ли мои данные?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    Да, все данные хранятся в зашифрованном виде на защищённых серверах. Мы используем SSL/TLS 
-                    для защиты передачи данных и регулярно проводим аудиты безопасности.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Какие браузеры поддерживаются?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    Chrome, Firefox, Safari, Edge. Рекомендуется использовать последние версии браузеров. 
-                    Функция распознавания речи требует современный браузер с поддержкой Web Speech API.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Есть ли мобильное приложение?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    На данный момент приложение адаптировано для мобильных браузеров. Приложение для iOS и Android 
-                    находится в разработке и будет выпущено в ближайшее время.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Могу ли я экспортировать свои задачи?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    Да! В разделе "Настройки" вы можете экспортировать все задачи в форматах CSV и JSON. 
-                    Вы также можете импортировать задачи из других приложений.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Как отключить уведомления?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    Откройте "Настройки" → "Уведомления" и выберите, какие типы уведомлений вы хотите получать. 
-                    Вы можете отключить все уведомления или настроить расписание "не беспокоить".
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <h4 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                    ▶ Бесплатно ли приложение?
-                </h4>
-                <div class="faq-answer" style="display: block;">
-                    SmartTo-DoList имеет бесплатный тарифный план со всеми основными функциями. Премиум-план 
-                    открывает дополнительные возможности, такие как интеграции и расширенная аналитика.
-                </div>
-            </div>
-        </section>
-
-        <!-- Contact Information -->
-        <section class="about-section">
-            <h2>📞 Контаты разработчика</h2>
-            
-            <div class="contact-info">
-                <h3>Свяжитесь с нами</h3>
-                
-                <div class="contact-item">
-                    <strong>📧 Email</strong>
-                    <a href="mailto:nikitagolosumov1@gmail.com" style="color: white; text-decoration: none; font-weight: 500;">
-                        nikitagolosumov1@gmail.com
-                    </a>
-                </div>
-
-                <div class="contact-item">
-                    <strong>💬 Telegram Support Bot</strong>
-                    <a href="https://t.me/smarttodo_support" style="color: white; text-decoration: none; font-weight: 500;">
-                        @smarttodo_support
-                    </a>
-                </div>
-
-                <div class="contact-item">
-                    <strong>📱 Telegram канал</strong>
-                    <a href="https://t.me/SmartToDoList" style="color: white; text-decoration: none; font-weight: 500;">
-                        @SmartToDoList
-                    </a>
-                </div>
-
-                <div class="contact-item">
-                    <strong>💻 GitHub</strong>
-                    <a href="https://github.com/fert1z/SmartTo-DoList" style="color: white; text-decoration: none; font-weight: 500;">
-                        https://github.com/fert1z/SmartTo-DoList
-                    </a>
-                </div>
-
-                <div class="contact-item">
-                    <strong>🌐 Веб-сайт</strong>
-                    <a href="https://smarttodolist.com" style="color: white; text-decoration: none; font-weight: 500;">
-                        smarttodolist.com
-                    </a>
-                </div>
-
-                <div class="contact-item">
-                    <strong>⏰ Часы поддержки</strong>
-                    Пн-Пт: 09:00 - 18:00 (MSK)<br>
-                    Сб-Вс: 10:00 - 16:00 (MSK)
-                </div>
-            </div>
-
-            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-top: 20px;">
-                <h3 style="color: #333; margin-top: 0;">Следите за нами в социальных сетях</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <span class="badge">🐦 Twitter</span>
-                    <span class="badge">👥 Facebook</span>
-                    <span class="badge">📸 Instagram</span>
-                    <span class="badge">💼 LinkedIn</span>
-                </div>
-            </div>
-        </section>
-        
-        <!-- Version and Updates -->
-        <section class="about-section">
-            <h2>🔄 История обновлений</h2>
-            <div style="color: #555;">
-                <p><strong style="color: #008CBA;">Версия 1.0.0</strong> — Релиз от 31 марта 2026</p>
-                <ul style="padding-left: 20px; color: #555;">
-                    <li>✅ Основная функциональность управления задачами</li>
-                    <li>✅ Интеграция с Telegram</li>
-                    <li>✅ Распознавание речи</li>
-                    <li>✅ Система уведомлений</li>
-                    <li>✅ Аутентификация и авторизация</li>
-                </ul>
-            </div>
-            <div class="version-info">
-                <p>Текущая версия: <strong>1.0.0</strong><br>
-                Последнее обновление: 31 марта 2026<br>
-                © 2026 SmartTo-DoList. Все права защищены.</p>
-            </div>
-        </section>
-
-        <!-- Call to Action -->
-        <section style="text-align: center; margin-top: 40px; margin-bottom: 40px;">
-            <h2 style="color: #008CBA;">Готовы начать?</h2>
-            <p style="font-size: 16px; color: #555;">
-                Присоединяйтесь к тысячам пользователей, которые вже повысили свою продуктивность с помощью SmartTo-DoList!
-            </p>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <a href="/auth/register" class="button" style="background-color: #4ea851; color: white; padding: 15px 40px; font-size: 16px;">
-                    Создать аккаунт
-                </a>
-                <a href="/" class="button" style="background-color: #008CBA; color: white; padding: 15px 40px; font-size: 16px;">
-                    На главную
-                </a>
-            </div>
-        </section>
-    </main>
-
-    <footer style="background-color: #333; color: white; text-align: center; padding: 20px; margin-top: 40px;">
-        <p style="margin: 0; font-size: 14px;">
-            SmartTo-DoList © 2026 | 
-            <a href="/about" style="color: #4ea851; text-decoration: none;">О проекте</a> | 
-            <a href="/privacy" style="color: #4ea851; text-decoration: none;">Конфиденциальность</a> | 
-            <a href="/terms" style="color: #4ea851; text-decoration: none;">Условия использования</a>
+{% block content %}
+<main class="about-main">
+    <section class="about-section">
+        <h2>О проекте SmartTo-DoList</h2>
+        <p>
+            <strong>SmartTo-DoList</strong> — это современное веб-приложение для управления задачами и напоминаниями,
+            с использованием искусственного интеллекта. Наше приложение помогает вам организовать работу,
+            учёбу и личные дела, не упустив ничего важного.
         </p>
-    </footer>
-</body>
-</html>
+        <p>
+            С помощью умных функций вы сможете быстро добавлять задачи, устанавливать приоритеты, получать
+            своевременные напоминания и синхронизировать все со своим Telegram-ботом.
+        </p>
+    </section>
+
+    <section class="about-section">
+        <h2>🧠 Умные функции</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🎯 Умные напоминания</h3>
+                <p>Система автоматически определяет приоритет ваших задач и напоминает о них в нужный момент.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📱 Синхронизация с Telegram</h3>
+                <p>Получайте уведомления о задачах прямо в Telegram и управляйте ими из мессенджера.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🗣️ Распознавание речи</h3>
+                <p>Добавляйте задачи голосом! Просто говорите, что нужно сделать, и нейросеть создаст задачу.</p>
+            </div>
+            <div class="feature-card">
+                <h3>⏰ Нечёткие сроки</h3>
+                <p>Указывайте сроки в естественном языке: «на следующей неделе», «в пятницу», «через 3 дня».</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h2>📖 Инструкции</h2>
+        <div class="instruction-step">
+            <h4>Синхронизация с Telegram</h4>
+            <ol>
+                <li>Откройте Telegram и найдите бота <code class="instruction-hint">@SmartToDo_bot</code></li>
+                <li>Нажмите "Начать" (/start)</li>
+                <li>Свяжите аккаунт с помощью кода из раздела "Настройки" в приложении</li>
+            </ol>
+        </div>
+        <div class="instruction-step">
+            <h4>Примеры нечётких сроков</h4>
+            <div class="instruction-hint">
+                <p>✅ <code>На следующей неделе</code></p>
+                <p>✅ <code>В пятницу вечером</code></p>
+                <p>✅ <code>Через 3 дня</code></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h2>❓ FAQ</h2>
+        <div class="faq-item">
+            <h4>▶ Безопасны ли мои данные?</h4>
+            <div class="faq-answer">Да, все данные хранятся в зашифрованном виде, и мы используем SSL/TLS для защиты передачи данных.</div>
+        </div>
+        <div class="faq-item">
+            <h4>▶ Какие браузеры поддерживаются?</h4>
+            <div class="faq-answer">Chrome, Firefox, Safari, Edge. Рекомендуется использовать последние версии.</div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <h2>📞 Контакты</h2>
+        <div class="contact-info">
+            <div class="contact-item">
+                <strong>📧 Email</strong>
+                <a href="mailto:nikitagolosumov1@gmail.com">nikitagolosumov1@gmail.com</a>
+            </div>
+            <div class="contact-item">
+                <strong>💬 Telegram Support</strong>
+                <a href="https://t.me/smarttodo_support">@smarttodo_support</a>
+            </div>
+            <div class="contact-item">
+                <strong>💻 GitHub</strong>
+                <a href="https://github.com/fert1z/SmartTo-DoList">fert1z/SmartTo-DoList</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2>Готовы начать?</h2>
+        <p>Присоединяйтесь к тысячам пользователей, которые уже повысили свою продуктивность!</p>
+        <div class="cta-buttons">
+            <a href="/auth/register" class="cta-button cta-primary">Создать аккаунт</a>
+            <a href="/" class="cta-button cta-secondary">На главную</a>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Простой аккордеон для FAQ
+    document.querySelectorAll('.faq-item h4').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var answer = this.nextElementSibling;
+            answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+        });
+    });
+</script>
+{% endblock %}

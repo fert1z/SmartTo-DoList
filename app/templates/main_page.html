@@ -1,60 +1,62 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartTo-DoList - Главная</title>
-    <link rel="stylesheet" href="/static/css/navigation.css">
-    <link rel="stylesheet" href="/static/css/landing.css">
-</head>
-<body>
-    <header>
-        <div class="header-top">
-            <h1><a href="/">SmartTo-DoList</a></h1>
-            <nav>
-                <a href="/">Главная</a>
-                <a href="/about">О проекте</a>
-                <a href="/auth/login">Войти</a>
-                <a href="/auth/register">Регистрация</a>
-            </nav>
+{% extends 'base.html' %}
+
+{% block title %}SmartTo-DoList - Главная{% endblock %}
+
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/landing.css">
+{% endblock %}
+
+{% block content %}
+<main class="landing-main">
+    <section id="hero">
+        <h2>Ваш умный помощник в планировании задач</h2>
+        <p>SmartTo-DoList поможет вам организовать свои дела, не забыть о важных событиях и повысить продуктивность с помощью искусственного интеллекта.</p>
+        <a href="/auth/register" id="try-it-now-btn">Попробовать бесплатно</a>
+    </section>
+
+    <section class="features-section">
+        <div class="features-grid">
+            <div class="feature-card-landing">
+                <span class="icon">🧠</span>
+                <h3>Умный Парсинг</h3>
+                <p>Пишите сроки как вам удобно: "завтра в 5", "через неделю", "в следующий вторник". Нейросеть поймет вас.</p>
+            </div>
+            <div class="feature-card-landing">
+                <span class="icon">📱</span>
+                <h3>Telegram-бот</h3>
+                <p>Управляйте задачами и получайте напоминания прямо в Telegram, где бы вы ни находились.</p>
+            </div>
+            <div class="feature-card-landing">
+                <span class="icon">🎨</span>
+                <h3>Настраиваемый Интерфейс</h3>
+                <p>Выберите светлую или тёмную тему и настройте часовой пояс для максимального комфорта.</p>
+            </div>
         </div>
-    </header>
+    </section>
 
-    <main>
-        <section id="hero">
-            <h2>Ваш умный помощник в планировании задач</h2>
-            <p>SmartTo-DoList поможет вам организовать свои дела, не забыть о важных событиях и повысить продуктивность.</p>
-            <a href="/auth/register" id="try-it-now-btn" class="button large">Попробовать сейчас!</a>
-        </section>
+    <section class="cta-landing">
+        <h2>Начните организовывать свою жизнь уже сегодня</h2>
+        <a href="/auth/register" id="try-it-now-btn">Создать аккаунт</a>
+    </section>
+</main>
+{% endblock %}
 
-        <hr>
+{% block scripts %}
+<script>
+    // Простой Intersection Observer для анимации при скролле
+    document.addEventListener("DOMContentLoaded", function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, { threshold: 0.1 });
 
-        <section id="features">
-            <h3>Что умеет SmartTo-DoList:</h3>
-            <ul id="list_func">
-                <li>➕ Создавай напоминания легко</li>
-                <li>⏰ Выбирай удобное время и дату</li>
-                <li>🔔 Получай своевременные уведомления</li>
-            </ul>
-            <ul id="list_fihe">
-                <li>🧠 Умные напоминания с приоритетами</li>
-                <li>📱 Синхронизация с Telegram для удобства</li>
-                <li>🗣️ Распознавание речи для быстрого ввода</li>
-            </ul>
-        </section>
-
-        <section id="audience">
-            <h3>Кому подойдет SmartTo-DoList:</h3>
-            <ul id="list_audience">
-                <li>💻 Профессионалам для организации рабочих задач</li>
-                <li>📝 Студентам для планирования учёбы и проектов</li>
-                <li>💼 Всем, кто хочет эффективно управлять личными делами</li>
-            </ul>
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; 2026 SmartTo-DoList. Все права защищены.</p>
-    </footer>
-</body>
-</html>
+        document.querySelectorAll('.feature-card-landing, .cta-landing').forEach(card => {
+            card.style.animationPlayState = 'paused';
+            observer.observe(card);
+        });
+    });
+</script>
+{% endblock %}
