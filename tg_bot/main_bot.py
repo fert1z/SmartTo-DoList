@@ -15,6 +15,7 @@ from telebot import types
 
 from app import create_app, db
 from app.models import Task, TelegramLinkCode, User
+from app.gemini_utils import generate_reminder_text_with_gemini # ИЗМЕНЕНО
 
 logger = logging.getLogger(__name__)
 

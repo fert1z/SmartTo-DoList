@@ -3,6 +3,7 @@ import logging
 from typing import Optional
 from datetime import datetime, timezone
 import google.generativeai as genai
+import html
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
 
     try:
         genai.configure(api_key=api_key)
-        # Использование стабильной модели, доступной на всех эндпоинтах
         model = genai.GenerativeModel('gemini-pro')
         
         now_utc = datetime.now(timezone.utc)
@@ -57,10 +57,9 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
         )
         
         result_text = response.text.strip()
-        logger.info("Gemini raw response: '%s'", result_text)
+        logger.info("Gemini raw response for time parsing: '%s'", result_text)
 
         if result_text and result_text.lower() != 'none':
-            # Очистка от маркдауна и переносов строк
             result_text = result_text.replace('`', '').strip()
             if result_text.endswith('Z'):
                 result_text = result_text[:-1] + '+00:00'
@@ -72,9 +71,62 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
                 
             return parsed_date
         else:
-            logger.warning("Gemini returned 'None' for input: '%s'", text)
+            logger.warning("Gemini returned 'None' for time input: '%s'", text)
             
     except Exception as e:
         logger.error("Gemini time parsing failed for input '%s': %s", text, str(e))
     
     return None
+
+
+def generate_reminder_text_with_gemini(
+    *,
+    title: str,
+    description: Optional[str],
+    due_iso: Optional[str],
+    priority: Optional[str],
+) -> str:
+    """
+    Generates short, friendly reminder text for Telegram using Gemini.
+    Returns a safe fallback on error.
+    """
+    fallback_text = f"Напоминание: скоро дедлайн по задаче «{html.escape(title)}»."
+    api_key = _gemini_api_key()
+    if not api_key:
+        logger.warning("GEMINI_API_KEY is not set. Using fallback for reminder text.")
+        return fallback_text
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')
+
+        prompt = (
+            "Ты — дружелюбный ассистент в боте-планировщике. Сгенерируй ОЧЕНЬ короткое (1-2 предложения) напоминание для Telegram на русском языке.\n"
+            "Тон: деловой, но поддерживающий и неформальный. Не используй эмодзи.\n\n"
+            "ДЕТАЛИ ЗАДАЧИ:\n"
+            f"- Название: {title}\n"
+            f"- Описание: {description or 'нет'}\n"
+            f"- Срок: {due_iso or 'не указан'}\n"
+            f"- Приоритет: {priority or 'не указан'}\n\n"
+            "Текст напоминания:"
+        )
+
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=150,
+            )
+        )
+        
+        generated_text = response.text.strip()
+        logger.info("Gemini raw response for reminder text: '%s'", generated_text)
+
+        if not generated_text:
+            return fallback_text
+            
+        return html.escape(generated_text)
+
+    except Exception as e:
+        logger.error("Gemini reminder text generation failed: %s", str(e))
+        return fallback_text
