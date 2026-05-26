@@ -33,7 +33,11 @@ def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Opt
     Returns None if parsing fails.
     """
     api_key = _openai_api_key()
-    if not api_key or not text:
+    if not api_key:
+        logger.warning("OPENAI_API_KEY is not set. Cannot parse natural time.")
+        return None
+        
+    if not text:
         return None
 
     model = _openai_model()
@@ -79,6 +83,8 @@ def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Opt
         data = r.json()
         result_text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
 
+        logger.info("OpenAI raw response: '%s'", result_text)
+
         if result_text and result_text.lower() != 'none':
             # Clean up potential markdown backticks
             result_text = result_text.replace('`', '').strip()
@@ -94,6 +100,8 @@ def parse_natural_time_with_openai(text: str, user_timezone: str = 'UTC') -> Opt
                 parsed_date = parsed_date.replace(tzinfo=timezone.utc)
                 
             return parsed_date
+        else:
+             logger.warning("OpenAI returned 'None' for input: '%s'", text)
             
     except (requests.RequestException, ValueError, IndexError) as e:
         logger.error("OpenAI time parsing failed for input '%s': %s", text, str(e))
