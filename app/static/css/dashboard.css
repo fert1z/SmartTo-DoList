@@ -1,8 +1,8 @@
-/* Dashboard */
+/* --- Dashboard --- */
 .dashboard-main {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 1.25rem 1.5rem 3rem;
+    padding: 1.5rem 2rem 3rem;
 }
 
 .dashboard-head {
@@ -11,71 +11,100 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .page-title {
     margin: 0;
-    font-size: 1.75rem;
-    color: var(--text-link);
-    border: none;
-    padding: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
 }
 
-.btn-primary-inline {
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* --- Общие стили кнопок --- */
+.btn {
     display: inline-flex;
     align-items: center;
-    padding: 0.65rem 1.25rem;
-    background: var(--text-link);
-    color: white !important;
-    text-decoration: none !important;
-    border-radius: 8px;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
     font-weight: 600;
     font-size: 0.95rem;
-    box-shadow: var(--shadow-soft);
-    transition: transform 0.15s ease, filter 0.15s ease;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
 }
 
-.btn-primary-inline:hover {
-    transform: translateY(-1px);
+.btn:hover {
+    transform: translateY(-2px);
     filter: brightness(1.1);
+}
+
+.btn-primary {
+    background: var(--text-link);
+    color: white !important;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-muted) !important;
+    border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+    border-color: var(--text-link);
+    color: var(--text-link) !important;
+}
+
+/* --- Сетка управления --- */
+.controls-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
 }
 
 .filter-tabs {
     display: flex;
-    flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    background: var(--bg-card);
+    padding: 0.5rem;
+    border-radius: 12px;
 }
 
 .filter-tab {
     padding: 0.5rem 1rem;
-    border: 2px solid var(--border-color);
-    background: var(--bg-card);
-    border-radius: 999px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--text-muted);
-    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .filter-tab:hover {
-    border-color: var(--text-link);
-    color: var(--text-link);
+    color: var(--text-main);
 }
 
 .filter-tab--active {
-    border-color: var(--text-link);
-    background: var(--accent-glow);
-    color: var(--text-link);
+    background: var(--bg-main);
+    color: var(--text-main);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .search-form {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1.25rem;
-    max-width: 100%;
 }
 
 .search-form input[type="search"] {
@@ -83,26 +112,32 @@
     min-width: 0;
     padding: 0.75rem 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 1rem;
     background: var(--bg-card);
     color: var(--text-main);
 }
 
 .search-form__btn {
-    padding: 0.75rem 1.25rem;
-    background: var(--text-link);
-    color: white;
-    border: none;
-    border-radius: 8px;
+    padding: 0.75rem;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
     cursor: pointer;
     font-size: 1.1rem;
-    transition: background 0.2s;
+    transition: var(--transition);
 }
 
 .search-form__btn:hover {
-    filter: brightness(1.1);
+    background: var(--text-link);
+    color: white;
+    border-color: var(--text-link);
 }
+
+/* --- Уведомления и задачи --- */
 
 .dashboard-toast {
     padding: 0.75rem 1rem;
@@ -123,157 +158,21 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.dashboard-toast--info {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3B82F6;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.task-container {
-    margin-top: 0.5rem;
-}
-
-.task-board {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
-}
-
 .task-board-empty {
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem 1.5rem;
     color: var(--text-muted);
     background: var(--bg-card);
-    border-radius: 12px;
+    border-radius: var(--radius);
     border: 1px dashed var(--border-color);
 }
 
-.task-board-empty a {
-    font-weight: 600;
-}
-
-.task-card {
-    background: var(--bg-card);
-    border-radius: 12px;
-    box-shadow: var(--shadow-soft);
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.task-card:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.task-card--completed {
-    opacity: 0.88;
-}
-
-.task-card--completed .task-title {
-    text-decoration: line-through;
-    color: var(--text-muted);
-}
-
-.task-card-inner {
-    padding: 1.1rem 1.15rem 1rem;
-}
-
-.task-title {
-    font-weight: 600;
-    margin: 0 0 0.5rem;
-    font-size: 1.05rem;
-    color: var(--text-main);
-    line-height: 1.35;
-}
-
-.task-description {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin: 0 0 0.75rem;
-    line-height: 1.45;
-}
-
-.task-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 0.75rem;
-    font-size: 0.8rem;
-}
-
-.task-date {
-    color: var(--text-muted);
-}
-
-.task-priority-badge {
-    color: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
-
-.task-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.task-actions button {
-    padding: 0.45rem 0.85rem;
-    font-size: 0.85rem;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: filter 0.15s ease, transform 0.1s ease;
-}
-
-.task-actions button:active {
-    transform: scale(0.98);
-}
-
-.btn-complete {
-    background: #43a047;
-    color: white;
-}
-
-.btn-complete:hover {
-    filter: brightness(1.08);
-}
-
-.btn-delete {
-    background: #e53935;
-    color: white;
-}
-
-.btn-delete:hover {
-    filter: brightness(1.08);
-}
-
-.task-done-label {
-    font-size: 0.85rem;
-    color: #4CAF50;
-    font-weight: 600;
-    align-self: center;
-    margin-right: auto;
-}
-
-@media (max-width: 600px) {
-    .dashboard-head {
-        flex-direction: column;
-        align-items: stretch;
+@media (max-width: 768px) {
+    .controls-grid {
+        grid-template-columns: 1fr;
     }
-
-    .btn-primary-inline {
+    .filter-tabs {
         justify-content: center;
     }
 }

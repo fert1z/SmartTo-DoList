@@ -15,6 +15,34 @@ document.addEventListener('DOMContentLoaded', function () {
             startVoiceRecording();
         });
     }
+
+    // Логика выбора способа ввода даты
+    const methodSelect = document.getElementById('due-date-method');
+    const exactBlock = document.getElementById('due-date-exact-block');
+    const smartBlock = document.getElementById('due-date-smart-block');
+    const exactInput = document.getElementById('task-datetime-exact');
+    const smartInput = document.getElementById('task-datetime-smart');
+
+    if (methodSelect && exactBlock && smartBlock) {
+        methodSelect.addEventListener('change', function () {
+            const method = this.value;
+            
+            // Скрываем оба блока по умолчанию
+            exactBlock.hidden = true;
+            smartBlock.hidden = true;
+
+            // Очищаем скрытые поля, чтобы они не отправились случайно
+            if (method !== 'exact') exactInput.value = '';
+            if (method !== 'smart') smartInput.value = '';
+
+            // Показываем нужный блок
+            if (method === 'exact') {
+                exactBlock.hidden = false;
+            } else if (method === 'smart') {
+                smartBlock.hidden = false;
+            }
+        });
+    }
 });
 
 function showFormMessage(text, isError) {
@@ -32,7 +60,7 @@ function handleAddTask() {
     const title = (document.getElementById('task-title') || {}).value || '';
     const description = (document.getElementById('task-description') || {}).value || '';
     
-    // Получаем значения из обоих полей
+    // Получаем значения из обоих полей (одно из них будет пустым благодаря логике выше)
     const dueDateExact = (document.getElementById('task-datetime-exact') || {}).value || '';
     const dueDateSmart = (document.getElementById('task-datetime-smart') || {}).value || '';
     

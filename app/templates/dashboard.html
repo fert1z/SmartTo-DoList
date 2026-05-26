@@ -10,39 +10,30 @@
 <main class="dashboard-main">
     <div class="dashboard-head">
         <h2 class="page-title">Мои задачи</h2>
-        <div>
-            <a href="/addtask" class="btn-primary-inline">+ Новая задача</a>
-            <button id="clear-completed" type="button" class="btn-secondary">Очистить выполненные</button>
+        <div class="header-actions">
+            <button id="clear-completed" type="button" class="btn btn-secondary">Очистить выполненные</button>
+            <a href="/addtask" class="btn btn-primary">+ Новая задача</a>
         </div>
     </div>
 
-    <div class="filter-tabs" role="tablist">
-        <button type="button" class="filter-tab filter-tab--active" data-filter="active" role="tab">Активные</button>
-        <button type="button" class="filter-tab" data-filter="all" role="tab">Все</button>
-        <button type="button" class="filter-tab" data-filter="done" role="tab">Выполненные</button>
-    </div>
+    <div class="controls-grid">
+        <div class="filter-tabs" role="tablist">
+            <button type="button" class="filter-tab filter-tab--active" data-filter="active" role="tab">Активные</button>
+            <button type="button" class="filter-tab" data-filter="all" role="tab">Все</button>
+            <button type="button" class="filter-tab" data-filter="done" role="tab">Выполненные</button>
+        </div>
 
-    <div class="dashboard-filters">
-        <label class="category-label" for="category-select">Категория:</label>
-        <select id="category-select" class="category-select">
-            <option value="all">Все</option>
-            <option value="personal">Личное</option>
-            <option value="work">Работа</option>
-            <option value="study">Учёба</option>
-        </select>
+        <form id="search-form" class="search-form" onsubmit="return false;">
+            <input type="search" id="search-input" name="q" placeholder="Поиск по задачам…" autocomplete="off">
+            <button type="submit" class="search-form__btn" aria-label="Найти">🔍</button>
+        </form>
     </div>
-
-    <form id="search-form" class="search-form" onsubmit="return false;">
-        <input type="search" id="search-input" name="q" placeholder="Поиск по названию и описанию…" autocomplete="off">
-        <button type="submit" class="search-form__btn" aria-label="Найти">🔍</button>
-    </form>
 
     <div id="dashboard-toast" class="dashboard-toast" hidden role="status"></div>
 
     <div class="task-container">
         <div id="task-board" class="task-board"></div>
     </div>
-    <div class="task-pager" id="task-pager"></div>
 </main>
 {% endblock %}
 

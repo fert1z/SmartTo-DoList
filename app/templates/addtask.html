@@ -42,17 +42,24 @@
             </div>
         </div>
 
-        <div class="form-row-2" style="margin-top: 1rem;">
-            <div>
-                <label for="task-datetime-exact">Точный срок (календарь)</label>
-                <input type="datetime-local" id="task-datetime-exact" name="due_date_exact">
-            </div>
-            <div>
-                <label for="task-datetime-smart">ИЛИ «Умный» срок</label>
-                <input type="text" id="task-datetime-smart" name="due_date_smart" placeholder="завтра в 18:00">
-            </div>
+        <div style="margin-top: 1rem;">
+            <label for="due-date-method">Способ установки срока</label>
+            <select id="due-date-method">
+                <option value="none" selected>Без срока</option>
+                <option value="exact">Точная дата (календарь)</option>
+                <option value="smart">"Умный" ввод (текстом)</option>
+            </select>
         </div>
-        <p class="field-hint">Если заполнены оба поля, приоритет будет у календаря.</p>
+
+        <div id="due-date-exact-block" class="due-date-block" hidden>
+            <label for="task-datetime-exact">Точный срок</label>
+            <input type="datetime-local" id="task-datetime-exact" name="due_date_exact">
+        </div>
+
+        <div id="due-date-smart-block" class="due-date-block" hidden>
+            <label for="task-datetime-smart">"Умный" срок</label>
+            <input type="text" id="task-datetime-smart" name="due_date_smart" placeholder="Например: завтра в 18:00">
+        </div>
 
         <button type="submit" class="btn-submit-task">Сохранить задачу</button>
     </form>
