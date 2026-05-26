@@ -2,8 +2,7 @@ import os
 import logging
 from typing import Optional
 from datetime import datetime, timezone
-from google import genai
-from google.genai import types
+import requests
 import html
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ def _gemini_api_key() -> str:
 
 def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Optional[datetime]:
     """
-    Parses a natural language string into a UTC datetime object using Google Gemini.
+    Parses a natural language string into a UTC datetime object using Google Gemini via REST API.
     Returns None if parsing fails.
     """
     api_key = _gemini_api_key()
@@ -27,7 +26,6 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
         return None
 
     try:
-        client = genai.Client(api_key=api_key)
         now_utc = datetime.now(timezone.utc)
         
         prompt = (
@@ -48,15 +46,28 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
             f"Query: '{text}' -> Result: "
         )
 
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.0,
-            )
-        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.0}
+        }
+
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
         
-        result_text = response.text.strip()
+        # Если ошибка 404, логируем подробности
+        if response.status_code != 200:
+            logger.error(f"Gemini API returned {response.status_code}: {response.text}")
+            return None
+            
+        data = response.json()
+        
+        try:
+            result_text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+        except (KeyError, IndexError):
+            logger.error(f"Unexpected response format from Gemini: {data}")
+            return None
+            
         logger.info("Gemini raw response for time parsing: '%s'", result_text)
 
         if result_text and result_text.lower() != 'none':
@@ -97,8 +108,6 @@ def generate_reminder_text_with_gemini(
         return fallback_text
 
     try:
-        client = genai.Client(api_key=api_key)
-
         prompt = (
             "Ты — дружелюбный ассистент в боте-планировщике. Сгенерируй ОЧЕНЬ короткое (1-2 предложения) напоминание для Telegram на русском языке.\n"
             "Тон: деловой, но поддерживающий и неформальный. Не используй эмодзи.\n\n"
@@ -110,16 +119,26 @@ def generate_reminder_text_with_gemini(
             "Текст напоминания:"
         )
 
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.7,
-                max_output_tokens=150,
-            )
-        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 150}
+        }
+
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
         
-        generated_text = response.text.strip()
+        if response.status_code != 200:
+            logger.error(f"Gemini API returned {response.status_code} for reminder generation: {response.text}")
+            return fallback_text
+            
+        data = response.json()
+        
+        try:
+            generated_text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+        except (KeyError, IndexError):
+            return fallback_text
+
         logger.info("Gemini raw response for reminder text: '%s'", generated_text)
 
         if not generated_text:
