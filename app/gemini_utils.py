@@ -26,8 +26,8 @@ def parse_natural_time_with_gemini(text: str, user_timezone: str = 'UTC') -> Opt
 
     try:
         genai.configure(api_key=api_key)
-        # Использование актуальной стабильной модели
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Использование стабильной модели, доступной на всех эндпоинтах
+        model = genai.GenerativeModel('gemini-pro')
         
         now_utc = datetime.now(timezone.utc)
         
