@@ -83,14 +83,17 @@ def telegram_generate_link():
     try:
         user_id = session.get('user_id')
         code = secrets.token_hex(8).upper()
+        
+        # Удаляем старые коды и создаем новый
+        TelegramLinkCode.query.filter_by(user_id=user_id).delete()
+        
         row = TelegramLinkCode(
             user_id=user_id,
             code=code,
             expires_at=datetime.utcnow() + timedelta(minutes=LINK_CODE_TTL_MINUTES),
         )
-        with db.session.begin():
-            TelegramLinkCode.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-            db.session.add(row)
+        db.session.add(row)
+        db.session.commit()
 
         logger.info(f"Telegram link code generated for user {user_id}")
         return jsonify({
@@ -116,9 +119,9 @@ def telegram_unlink():
         if not user:
             return jsonify({'error': 'Пользователь не найден'}), 404
 
-        with db.session.begin():
-            user.telegram_user_id = None
-            TelegramLinkCode.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        user.telegram_user_id = None
+        TelegramLinkCode.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
 
         logger.debug(f"Telegram unlinked for user {user_id}")
         return jsonify({'success': True})
@@ -153,16 +156,16 @@ def edit_profile():
 
                 token = secrets.token_urlsafe(32)
                 expires_at = datetime.utcnow() + timedelta(hours=1)
-                with db.session.begin():
-                    EmailChangeRequest.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-                    change_request = EmailChangeRequest(
-                        user_id=user_id,
-                        new_email=new_email,
-                        token=token,
-                        expires_at=expires_at,
-                        used=False,
-                    )
-                    db.session.add(change_request)
+                
+                EmailChangeRequest.query.filter_by(user_id=user_id).delete()
+                change_request = EmailChangeRequest(
+                    user_id=user_id,
+                    new_email=new_email,
+                    token=token,
+                    expires_at=expires_at,
+                    used=False,
+                )
+                db.session.add(change_request)
 
                 confirm_url = url_for('account.confirm_email', token=token, _external=True)
                 subject = 'SmartTo-DoList: подтвердите новый email'
@@ -173,7 +176,8 @@ def edit_profile():
                     'Если вы не делали этот запрос, просто проигнорируйте это письмо.\n'
                 )
                 send_email(to_email=new_email, subject=subject, body_text=body_text)
-
+                
+                db.session.commit()
                 logger.info(f'Email change request created for user {user_id}')
                 return jsonify({'success': True, 'message': 'На новый email отправлено письмо для подтверждения.'})
 
@@ -205,9 +209,10 @@ def confirm_email():
         return redirect(url_for('auth.login'))
 
     old_email = user.email
-    with db.session.begin():
-        user.email = request_row.new_email
-        request_row.used = True
+    
+    user.email = request_row.new_email
+    request_row.used = True
+    db.session.commit()
 
     notification_subject = 'SmartTo-DoList: email изменён'
     notification_body = (

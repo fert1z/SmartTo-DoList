@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python -m tg_bot.run"
+restartPolicyType = "on_failure"
