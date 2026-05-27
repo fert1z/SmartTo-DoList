@@ -2,21 +2,24 @@
 
 echo "🚀 Запуск SmartTo-DoList..."
 
-# Активация виртуального окружения
+# Активация виртуального окружения, если мы не в Docker/PaaS
 if [ -d ".venv" ]; then
     source .venv/bin/activate
-else
-    echo "❌ Виртуальное окружение .venv не найдено. Запустите setup сначала."
-    exit 1
 fi
 
 # Запуск Flask-приложения в фоне (Production)
 echo "🌐 Запуск веб-сервера (Gunicorn)..."
-.venv/bin/gunicorn wsgi:app --bind 0.0.0.0:${PORT:-5001} &
+# В облачных средах (Render, Railway) .venv может не быть, gunicorn должен быть в PATH
+GUNICORN_PATH="gunicorn"
+if [ -f ".venv/bin/gunicorn" ]; then
+    GUNICORN_PATH=".venv/bin/gunicorn"
+fi
+$GUNICORN_PATH wsgi:app --bind 0.0.0.0:${PORT:-10000} &
 APP_PID=$!
 
 # Запуск Telegram-бота в фоне (если настроен токен)
-if grep -q "TELEGRAM_BOT_TOKEN=.\+" .env 2>/dev/null; then
+# Проверяем переменную окружения, а не файл .env
+if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
     echo "🤖 Запуск Telegram-бота..."
     python -m tg_bot.run &
     BOT_PID=$!
@@ -28,4 +31,5 @@ fi
 # Корректное завершение всех процессов по Ctrl+C
 trap "echo 'Stopping...'; kill $APP_PID ${BOT_PID:-}; exit" INT
 
-wait
+# Ожидаем завершения любого из фоновых процессов
+wait -n $APP_PID ${BOT_PID:-}
