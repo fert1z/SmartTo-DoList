@@ -5,6 +5,9 @@ from flask import session, redirect, url_for, jsonify, request
 from email_validator import validate_email, EmailNotValidError
 from datetime import datetime, timedelta, timezone
 import pytz
+import logging
+
+logger = logging.getLogger(__name__)
 
 def validate_email_format(email):
     """Валидирует формат email"""
@@ -53,6 +56,7 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
     Реализует все правила расчетов: интервалы, абстрактные дни, дни недели, размытое время.
     Возвращает datetime в UTC.
     """
+    logger.info("--- RUNNING NEW ADVANCED LOCAL PARSER ---")
     if not text:
         return None
         
@@ -102,7 +106,6 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
         
         if total_minutes > 0 or days_add > 0:
             target_dt = now + timedelta(days=days_add * multiplier, minutes=total_minutes * multiplier)
-            # Если сказано "через неделю в это же время", время уже учтено
             return target_dt.astimezone(pytz.utc)
 
     # 2. Абстрактные дни
@@ -135,7 +138,7 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
         try:
             target_date = datetime(target_year, month, day).date()
         except ValueError:
-            pass # Игнорируем некорректные даты
+            pass
             
     # 3. Дни недели и недели
     weekdays = {
@@ -151,13 +154,12 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
     is_next_week_explicit = 'следующ' in text
     
     if 'выходны' in text:
-        if now.weekday() < 5: # Если будни -> ближайшая суббота
+        if now.weekday() < 5:
             days_ahead = 5 - now.weekday()
             target_date = now.date() + timedelta(days=days_ahead)
-        else: # Если уже выходные -> сегодня
+        else:
             target_date = now.date()
     elif is_next_week_explicit and 'недел' in text and not any(wd in text for wd in weekdays):
-        # "на следующей неделе" без уточнения дня -> следующий понедельник
         days_ahead = 7 - now.weekday()
         target_date = now.date() + timedelta(days=days_ahead)
     else:
@@ -165,32 +167,14 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
             if wd_name in text:
                 days_ahead = wd_idx - now.weekday()
                 if is_next_week_explicit:
-                    # Строго следующая календарная неделя
-                    if days_ahead <= 0:
-                        days_ahead += 7
-                    else:
-                        days_ahead += 7 # Если сегодня ПН, а просят в след. ВТ, это +8 дней.
-                        # Wait, "следующий вторник" если сегодня ПН: 
-                        # wd_idx(1) - now.weekday(0) = 1. + 7 = 8 days. Correct.
-                        # "следующий понедельник" если сегодня ВТ:
-                        # wd_idx(0) - now.weekday(1) = -1. + 7 = 6 days. Wait, next week Monday is +6 days.
-                        # Let's standardize: next week means passing the upcoming Sunday.
-                        pass
-                else:
-                    # "В [день]" - ближайший
-                    if days_ahead < 0: # Уже прошел на этой неделе
-                        days_ahead += 7
-                    elif days_ahead == 0 and 'завтра' not in text and 'сегодня' not in text:
-                        # Если сегодня этот день, но время не указано - подразумевается следующая неделя
-                        # Но если время указано и еще не наступило - сегодня.
-                        # Это сложно проверить до парсинга времени. Пока оставим сегодня (days_ahead=0).
-                        pass
+                    days_ahead += 7
+                elif days_ahead <= 0:
+                    days_ahead += 7
                 
-                if days_ahead != 0:
-                    target_date = now.date() + timedelta(days=days_ahead)
+                target_date = now.date() + timedelta(days=days_ahead)
                 break
 
-    # 4. Размытые временные промежутки (Дефолтные значения)
+    # 4. Размытое время
     time_words = {
         'утр': 9,
         'обед': 13,
@@ -211,37 +195,27 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
     if time_match_exact:
         target_time = datetime.min.time().replace(hour=int(time_match_exact.group(1)), minute=int(time_match_exact.group(2)))
     else:
-        hour_only_match = re.search(r'\b(\d{1,2})\s*(утра|вечера|дня|ночи|часов)?\b', text)
+        hour_only_match = re.search(r'\b(\d{1,2})\b', text)
         if hour_only_match and not exact_date_match:
             h = int(hour_only_match.group(1))
-            modifier = hour_only_match.group(2)
-            
-            if modifier == 'вечера' and h < 12: h += 12
-            elif modifier == 'дня' and h <= 4: h += 12
-            elif not modifier and h < 8 and 'ноч' not in text: h += 12 # "в 5" -> 17:00
-            
+            if h < 8 and 'ноч' not in text: h += 12
             if h <= 23:
                 target_time = datetime.min.time().replace(hour=h)
 
-    # Дефолтное время 09:00:00, если день указан, а время нет
+    # Дефолтное время 09:00:00
     if target_time is None and (target_date != now.date() or 'завтра' in text or 'сегодня' in text):
         target_time = datetime.min.time().replace(hour=9)
         
-    # Корректировка, если день "сегодня", а время уже прошло -> переносим на завтра
-    if target_date == now.date() and target_time:
-        if target_time <= now.time():
-            # За исключением случаев, когда явно сказали "сегодня"
-            if 'сегодня' not in text:
-                target_date = target_date + timedelta(days=1)
+    # Корректировка, если день "сегодня", а время уже прошло
+    if target_date == now.date() and target_time and target_time <= now.time() and 'сегодня' not in text:
+        target_date += timedelta(days=1)
             
-    # Если вообще ничего не распознано (target_date = сегодня, target_time = None)
     if target_date == now.date() and target_time is None:
         return None
 
     if target_time is None:
         target_time = now.time()
 
-    # Собираем итоговый datetime
     final_dt = tz.localize(datetime.combine(target_date, target_time))
     
     return final_dt.astimezone(pytz.utc)
@@ -256,7 +230,6 @@ def require_login(f):
             if request.is_json or request.path.startswith('/api'):
                 return jsonify({'error': 'Не авторизован'}), 401
             return redirect(url_for('auth.login'))
-        # Проверка существования пользователя
         from app.models import User
         user = User.query.get(user_id)
         if not user:
@@ -273,7 +246,6 @@ def format_datetime_for_user(dt, timezone_str='UTC'):
     if dt is None:
         return ''
     try:
-        # Простая реализация (можно расширить с pytz)
         return dt.strftime('%d.%m.%Y %H:%M')
     except Exception:
         return str(dt)
