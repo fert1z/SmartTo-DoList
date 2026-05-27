@@ -112,6 +112,18 @@
     }
 }
 
+.due-date-block {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-main);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.due-date-block label {
+    margin-top: 0;
+}
+
 .field-hint {
     margin: 0.35rem 0 0;
     font-size: 0.8rem;

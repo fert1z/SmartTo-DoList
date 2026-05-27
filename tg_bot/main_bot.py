@@ -15,7 +15,6 @@ from telebot import types
 
 from app import create_app, db
 from app.models import Task, TelegramLinkCode, User
-from app.gemini_utils import generate_reminder_text_with_gemini # ИЗМЕНЕНО
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +397,23 @@ def register_handlers() -> telebot.TeleBot:
     return b
 
 
+def generate_local_reminder_text(*, title: str, description: str | None, due_iso: str | None, priority: str | None) -> str:
+    """Генерирует текст напоминания локально."""
+    text = f"⏰ <b>Напоминание:</b> задача «{html.escape(title)}»"
+    if due_iso:
+        # Пытаемся распарсить дату для более красивого вывода
+        try:
+            dt = datetime.fromisoformat(due_iso)
+            time_str = dt.strftime("%H:%M")
+            text += f" должна быть выполнена к {time_str}"
+        except ValueError:
+            pass
+    if priority and priority in ['high', 'высокий']:
+        text += " ❗️"
+    
+    text += "!"
+    return text
+
 def _start_reminder_loop(poll_seconds: int = 60):
     """
     Фоновый цикл автосообщений для due_date.
@@ -407,7 +423,6 @@ def _start_reminder_loop(poll_seconds: int = 60):
     import time
 
     def loop():
-        from app.openai_reminders import generate_reminder_text
         from app.models import ReminderLog  # локально чтобы не ломать импорт
 
         window_minutes = int(os.environ.get("REMIND_WINDOW_MINUTES", "30").strip() or "30")
@@ -449,7 +464,7 @@ def _start_reminder_loop(poll_seconds: int = 60):
                             if age.total_seconds() < dedup_minutes * 60:
                                 continue
 
-                        reminder_text = generate_reminder_text(  # type: ignore[misc]
+                        reminder_text = generate_local_reminder_text(
                             title=task.title or "",
                             description=task.description or "",
                             due_iso=task.due_date.isoformat() if task.due_date else None,
@@ -457,9 +472,8 @@ def _start_reminder_loop(poll_seconds: int = 60):
                         )
 
                         try:
-                            # Escape reminder text to prevent HTML injection in Telegram
-                            safe_reminder_text = html.escape(reminder_text) if reminder_text else ""
-                            get_bot().send_message(int(user.telegram_user_id), safe_reminder_text)
+                            # Текст уже содержит нужный HTML, не эскейпим его дополнительно
+                            get_bot().send_message(int(user.telegram_user_id), reminder_text)
                         except Exception as e:
                             logger.warning(
                                 "Telegram send failed for user_id=%s task_id=%s: %s",

@@ -20,7 +20,7 @@ api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str = 'UTC') -> datetime | None:
     """
     Парсит дату. Приоритет у точной даты из календаря.
-    Если она не задана, используется локальный "умный" парсинг.
+    Если она не задана, используется мощный локальный парсер (замена нейросети).
     Возвращает datetime объект в UTC.
     """
     # Приоритет у точной даты
@@ -28,14 +28,12 @@ def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str
         try:
             dt = datetime.fromisoformat(exact_date_str)
             if dt.tzinfo is None:
-                # Если от браузера пришло "наивное" время, считаем его локальным и конвертируем в UTC
-                # Это упрощение, в идеале нужно знать timezone браузера
                 dt = dt.astimezone(timezone.utc)
             return dt
         except ValueError:
             pass
 
-    # Если точная дата не задана, используем локальный умный парсинг
+    # Если точная дата не задана, пробуем "умный" локальный парсинг
     if smart_date_str:
         logger.info(f"Trying to parse natural time locally: '{smart_date_str}' with timezone {user_timezone}")
         return parse_natural_time_local(smart_date_str, user_timezone)
