@@ -28,8 +28,8 @@ else
     BOT_PID=""
 fi
 
-# Корректное завершение всех процессов по Ctrl+C
-trap "echo 'Stopping...'; kill $APP_PID ${BOT_PID:-}; exit" INT
+# Корректное завершение всех процессов по Ctrl+C и SIGTERM
+trap "echo 'Gracefully stopping...'; kill $APP_PID ${BOT_PID:-}; exit" INT TERM
 
 # Ожидаем завершения любого из фоновых процессов
 wait -n $APP_PID ${BOT_PID:-}
