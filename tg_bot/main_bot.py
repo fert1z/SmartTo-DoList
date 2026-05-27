@@ -87,8 +87,12 @@ def _require_user(message) -> User | None:
 
 
 def _cleanup_expired_codes():
-    with db.session.begin():
-        TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.utcnow()).delete(synchronize_session=False)
+    try:
+        TelegramLinkCode.query.filter(TelegramLinkCode.expires_at < datetime.utcnow()).delete()
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error cleaning up expired codes: {e}")
 
 
 def register_handlers() -> telebot.TeleBot:
@@ -170,16 +174,20 @@ def register_handlers() -> telebot.TeleBot:
                 b.reply_to(message, 'Ошибка: пользователь не найден.')
                 return
 
-            with db.session.begin():
+            try:
                 if user.telegram_user_id and user.telegram_user_id != tg_id:
                     user.telegram_user_id = None
-                    db.session.flush()
 
                 user.telegram_user_id = tg_id
-                TelegramLinkCode.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-
-            logger.info(f"Telegram linked for user {user.username}")
-            b.reply_to(message, f'Аккаунт <b>{html.escape(user.username)}</b> успешно привязан.')
+                TelegramLinkCode.query.filter_by(user_id=user.id).delete()
+                db.session.commit()
+                
+                logger.info(f"Telegram linked for user {user.username}")
+                b.reply_to(message, f'Аккаунт <b>{html.escape(user.username)}</b> успешно привязан.')
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error linking telegram: {e}")
+                b.reply_to(message, 'Произошла ошибка при привязке аккаунта.')
 
     @b.message_handler(commands=['unlink'])
     def cmd_unlink(message):
@@ -189,10 +197,16 @@ def register_handlers() -> telebot.TeleBot:
             if not u:
                 b.reply_to(message, 'Telegram не был привязан.')
                 return
-            with db.session.begin():
+            
+            try:
                 u.telegram_user_id = None
-                TelegramLinkCode.query.filter_by(user_id=u.id).delete(synchronize_session=False)
-            b.reply_to(message, 'Telegram отвязан. Вы можете привязать аккаунт снова через сайт.')
+                TelegramLinkCode.query.filter_by(user_id=u.id).delete()
+                db.session.commit()
+                b.reply_to(message, 'Telegram отвязан. Вы можете привязать аккаунт снова через сайт.')
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error unlinking telegram: {e}")
+                b.reply_to(message, 'Произошла ошибка при отвязке аккаунта.')
 
     @b.message_handler(commands=['stats'])
     def cmd_stats(message):
