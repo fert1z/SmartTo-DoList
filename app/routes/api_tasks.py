@@ -7,6 +7,7 @@ import logging
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, session
+import pytz
 
 from app import db
 from app.models import Task, User
@@ -20,7 +21,7 @@ api_tasks_bp = Blueprint('api_tasks', __name__, url_prefix='/api/tasks')
 def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str = 'UTC') -> datetime | None:
     """
     Парсит дату. Приоритет у точной даты из календаря.
-    Если она не задана, используется мощный локальный парсер (замена нейросети).
+    Если она не задана, используется локальный "умный" парсинг.
     Возвращает datetime объект в UTC.
     """
     # Приоритет у точной даты
@@ -28,12 +29,18 @@ def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str
         try:
             dt = datetime.fromisoformat(exact_date_str)
             if dt.tzinfo is None:
-                dt = dt.astimezone(timezone.utc)
+                # Если пришло наивное время из формы datetime-local,
+                # считаем, что пользователь ввел его в своем часовом поясе.
+                try:
+                    tz = pytz.timezone(user_timezone)
+                except pytz.UnknownTimeZoneError:
+                    tz = pytz.utc
+                dt = tz.localize(dt).astimezone(pytz.utc)
             return dt
         except ValueError:
             pass
 
-    # Если точная дата не задана, пробуем "умный" локальный парсинг
+    # Если точная дата не задана, используем локальный умный парсинг
     if smart_date_str:
         logger.info(f"Trying to parse natural time locally: '{smart_date_str}' with timezone {user_timezone}")
         return parse_natural_time_local(smart_date_str, user_timezone)
@@ -41,14 +48,27 @@ def _parse_due_date(exact_date_str: str, smart_date_str: str, user_timezone: str
     return None
 
 
-def _task_to_json(task: Task) -> dict:
+def _task_to_json(task: Task, user_timezone: str = 'UTC') -> dict:
+    due_date_iso = None
+    if task.due_date:
+        # Задача хранится в БД в UTC (наивный datetime). 
+        # Прикрепляем к нему tzinfo UTC, затем конвертируем в часовой пояс пользователя.
+        dt_utc = task.due_date.replace(tzinfo=timezone.utc)
+        try:
+            tz = pytz.timezone(user_timezone)
+            dt_local = dt_utc.astimezone(tz)
+            # Возвращаем время со смещением, чтобы JS на фронтенде понял точное время
+            due_date_iso = dt_local.isoformat()
+        except pytz.UnknownTimeZoneError:
+            due_date_iso = dt_utc.isoformat()
+
     return {
         'id': task.id,
         'title': task.title,
         'description': task.description,
         'priority': task.priority,
         'status': task.status,
-        'due_date': task.due_date.isoformat() if task.due_date else None,
+        'due_date': due_date_iso,
         'category': task.category,
     }
 
@@ -59,8 +79,11 @@ def list_tasks_api():
     """Получение списка задач текущего пользователя."""
     try:
         user_id = session.get('user_id')
+        user = User.query.get(user_id)
+        user_timezone = user.timezone if user and user.timezone else 'UTC'
+        
         tasks = Task.query.filter_by(user_id=user_id).all()
-        return jsonify([_task_to_json(t) for t in tasks])
+        return jsonify([_task_to_json(t, user_timezone) for t in tasks])
     except Exception as e:
         logger.error('Error listing tasks via API: %s', str(e))
         return jsonify({'error': 'Ошибка при получении задач'}), 500
@@ -124,12 +147,15 @@ def task_detail_api(task_id: int):
     """Получение/обновление/удаление задачи."""
     try:
         user_id = session.get('user_id')
+        user = User.query.get(user_id)
+        user_timezone = user.timezone if user and user.timezone else 'UTC'
+        
         task = Task.query.filter_by(id=task_id, user_id=user_id).first()
         if not task:
             return jsonify({'error': 'Задача не найдена'}), 404
 
         if request.method == 'GET':
-            return jsonify(_task_to_json(task))
+            return jsonify(_task_to_json(task, user_timezone))
 
         if request.method == 'DELETE':
             db.session.delete(task)
@@ -160,8 +186,6 @@ def task_detail_api(task_id: int):
                 task.status = new_status
 
         if 'due_date' in data:
-            user = User.query.get(user_id)
-            user_timezone = user.timezone if user and user.timezone else 'UTC'
             task.due_date = _parse_due_date(data.get('due_date'), None, user_timezone)
 
         if 'category' in data:
