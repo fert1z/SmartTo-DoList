@@ -9,9 +9,10 @@ def apply_schema_migrations(db):
 
     tables = inspector.get_table_names()
 
-    # users.telegram_user_id
+    # users
     if 'users' in tables:
         cols = {c['name'] for c in inspector.get_columns('users')}
+        
         if 'telegram_user_id' not in cols:
             col_type = 'BIGINT' if dialect != 'sqlite' else 'INTEGER'
             with bind.begin() as conn:
@@ -24,6 +25,18 @@ def apply_schema_migrations(db):
                         'ON users (telegram_user_id)'
                     )
                 )
+                
+        if 'is_email_confirmed' not in cols:
+            col_type = 'BOOLEAN' if dialect != 'sqlite' else 'INTEGER'
+            default_val = 'FALSE' if dialect != 'sqlite' else '0'
+            # Для существующих пользователей ставим TRUE, чтобы не заблокировать их
+            with bind.begin() as conn:
+                conn.execute(text(f'ALTER TABLE users ADD COLUMN is_email_confirmed {col_type} NOT NULL DEFAULT TRUE'))
+                
+        if 'email_confirmed_at' not in cols:
+            col_type = 'TIMESTAMP WITHOUT TIME ZONE' if dialect == 'postgresql' else 'DATETIME'
+            with bind.begin() as conn:
+                conn.execute(text(f'ALTER TABLE users ADD COLUMN email_confirmed_at {col_type}'))
         
         # Расширяем столбец пароля для поддержки длинных хешей scrypt (только для Postgres)
         if dialect == 'postgresql':

@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from app.models import User, PasswordResetToken
+from app.models import User, PasswordResetToken, EmailConfirmationToken
 from app import db
 from app.limiter import limiter
 from app.utils import validate_email_format, validate_username, validate_password
@@ -16,8 +16,30 @@ logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__)
 
 
+def _send_confirmation_email(user):
+    """Отправляет письмо для подтверждения email."""
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Удаляем старые токены для этого пользователя
+    EmailConfirmationToken.query.filter_by(user_id=user.id).delete()
+    
+    conf_token = EmailConfirmationToken(
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at
+    )
+    db.session.add(conf_token)
+    db.session.commit()
+    
+    confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+    subject = 'Подтвердите ваш аккаунт SmartTo-DoList'
+    body_text = f"Добро пожаловать! Пожалуйста, подтвердите ваш email, перейдя по ссылке: {confirm_url}"
+    
+    send_email(to_email=user.email, subject=subject, body_text=body_text)
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
-# @limiter.limit("5 per 15 minutes")  # Защита от brute-force: 5 попыток в 15 минут
 def login():
     """Страница входа и обработка входа"""
     if request.method == 'POST':
@@ -32,7 +54,10 @@ def login():
             user = User.query.filter_by(username=username).first()
 
             if user and user.check_password(password):
-                # Защита от session fixation: очищаем сессию перед установкой новых значений
+                if not user.is_email_confirmed:
+                    flash('Ваш email не подтвержден. Пожалуйста, проверьте свою почту или запросите новое письмо.', 'warning')
+                    return redirect(url_for('auth.resend_confirmation'))
+
                 session.clear()
                 session.permanent = True
                 session['user_id'] = user.id
@@ -52,7 +77,6 @@ def login():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
-#@limiter.limit("3 per hour")  # Защита от brute-force регистрации: 3 попытки в час
 def register():
     """Страница регистрации и обработка регистрации"""
     if request.method == 'POST':
@@ -62,59 +86,42 @@ def register():
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm_password', '')
 
-            print(f"\n На Сервер Пришло: \n USERNAME: '{username}' \n EMAIL: '{email}' \n PASS_LEN: {len(password)} \n CONFIRM_LEN: {len(confirm_password)}\n")
-            # Валидация полей
             if not all([username, email, password, confirm_password]):
                 flash('Заполните все поля', 'error')
                 return render_template('registration.html'), 400
 
-            # Валидация username
             valid, msg = validate_username(username)
             if not valid:
-                flash(msg or 'Некорректный username', 'error')
+                flash(msg, 'error')
                 return render_template('registration.html'), 400
 
-            # Валидация email
             if not validate_email_format(email):
                 flash('Некорректный формат email', 'error')
                 return render_template('registration.html'), 400
 
-            # Валидация пароля
             valid, msg = validate_password(password)
             if not valid:
-                flash(msg or 'Некорректный пароль. Пароль должен содержать минимум 8 символов, хотя бы одну заглавную букву, одну строчную букву, одну цифру и один спецсимвол.', 'error')
+                flash(msg, 'error')
                 return render_template('registration.html'), 400
 
             if password != confirm_password:
                 flash('Пароли не совпадают', 'error')
                 return render_template('registration.html'), 400
 
-            # Проверка существования пользователя (generic сообщение для защиты от перечисления аккаунтов)
-            if User.query.filter_by(username=username).first():
+            if User.query.filter((User.username == username) | (User.email == email)).first():
                 flash('Пользователь с таким именем или email уже существует', 'error')
                 return render_template('registration.html'), 400
 
-            if User.query.filter_by(email=email).first():
-                flash('Пользователь с таким именем или email уже существует', 'error')
-                return render_template('registration.html'), 400
-
-            # Создание пользователя
-            user = User(username=username, email=email)
+            user = User(username=username, email=email, is_email_confirmed=False)
             user.set_password(password)
-
             db.session.add(user)
             db.session.commit()
 
-            logger.info(f"New user registered")
-            flash('Регистрация успешна! Добро пожаловать!', 'success')
+            _send_confirmation_email(user)
 
-            # Защита от session fixation: очищаем сессию перед установкой новых значений
-            session.clear()
-            session.permanent = True
-            session['user_id'] = user.id
-            session['username'] = user.username
-
-            return redirect(url_for('main.dashboard'))
+            logger.info(f"New user registered, confirmation sent to {email}")
+            flash('Регистрация почти завершена! Мы отправили письмо с подтверждением на ваш email.', 'success')
+            return redirect(url_for('auth.login'))
 
         except Exception as e:
             db.session.rollback()
@@ -125,6 +132,45 @@ def register():
     return render_template('registration.html')
 
 
+@auth_bp.route('/confirm/<token>')
+def confirm_email(token):
+    """Обработка токена подтверждения email."""
+    conf_token = EmailConfirmationToken.query.filter_by(token=token, used=False).first()
+    
+    if conf_token and conf_token.expires_at > datetime.utcnow():
+        user = User.query.get(conf_token.user_id)
+        if user:
+            user.is_email_confirmed = True
+            user.email_confirmed_at = datetime.utcnow()
+            conf_token.used = True
+            db.session.commit()
+            flash('Ваш email успешно подтвержден! Теперь вы можете войти.', 'success')
+            return redirect(url_for('auth.login'))
+
+    flash('Ссылка для подтверждения недействительна или истекла.', 'error')
+    return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/resend-confirmation', methods=['GET', 'POST'])
+def resend_confirmation():
+    """Повторная отправка письма с подтверждением."""
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if user.is_email_confirmed:
+                flash('Этот email уже подтвержден.', 'info')
+                return redirect(url_for('auth.login'))
+            
+            _send_confirmation_email(user)
+            flash('Новое письмо с подтверждением отправлено.', 'success')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('Пользователь с таким email не найден.', 'error')
+
+    return render_template('resend_confirmation.html')
+
+
 @auth_bp.route('/logout')
 def logout():
     """Выход из системы"""
@@ -132,11 +178,6 @@ def logout():
     session.clear()
     flash('Вы вышли из системы', 'success')
     return redirect(url_for('main.index'))
-
-
-def _cleanup_expired_reset_tokens() -> None:
-    with db.session.begin():
-        PasswordResetToken.query.filter(PasswordResetToken.expires_at < datetime.utcnow()).delete(synchronize_session=False)
 
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
@@ -151,46 +192,26 @@ def forgot_password():
                 flash('Введите корректный email', 'error')
                 return render_template('forgot_password.html'), 400
 
-            _cleanup_expired_reset_tokens()
             user = User.query.filter_by(email=email).first()
             if user:
-                logger.info("Password reset requested for user_id=%s", user.id)
-
                 token = secrets.token_urlsafe(32)
                 expires_at = datetime.utcnow() + timedelta(hours=1)
-                with db.session.begin():
-                    PasswordResetToken.query.filter_by(user_id=user.id).delete(synchronize_session=False)
-                    reset_token = PasswordResetToken(
-                        user_id=user.id,
-                        token=token,
-                        expires_at=expires_at,
-                        used=False,
-                    )
-                    db.session.add(reset_token)
+                
+                PasswordResetToken.query.filter_by(user_id=user.id).delete()
+                reset_token = PasswordResetToken(user_id=user.id, token=token, expires_at=expires_at)
+                db.session.add(reset_token)
+                db.session.commit()
 
                 reset_url = url_for('auth.reset_password', token=token, _external=True)
                 subject = 'SmartTo-DoList: восстановление пароля'
-                body_text = (
-                    f'Здравствуйте!\n\n'
-                    f'Вы запросили восстановление пароля для аккаунта SmartTo-DoList.\n\n'
-                    f'Перейдите по ссылке, чтобы сбросить пароль:\n{reset_url}\n\n'
-                    'Ссылка действительна 1 час. Если вы не делали этот запрос, просто проигнорируйте это письмо.\n'
-                )
+                body_text = f"Для сброса пароля перейдите по ссылке: {reset_url}"
+                send_email(to_email=email, subject=subject, body_text=body_text)
 
-                ok = send_email(
-                    to_email=email,
-                    subject=subject,
-                    body_text=body_text,
-                )
-                if ok:
-                    logger.info('Password reset email queued for user_id=%s', user.id)
-                else:
-                    logger.warning('Password reset email skipped/failed for user_id=%s (SMTP not configured?)', user.id)
-
-            flash('Если этот email зарегистрирован, на него будет отправлено письмо восстановления', 'info')
+            flash('Если этот email зарегистрирован, на него будет отправлено письмо для сброса пароля.', 'info')
             return redirect(url_for('auth.login'))
 
         except Exception as e:
+            db.session.rollback()
             logger.error(f"Forgot password error: {str(e)}")
             flash('Произошла ошибка', 'error')
             return render_template('forgot_password.html'), 500
@@ -206,7 +227,6 @@ def reset_password():
         flash('Недействительная или отсутствующая ссылка для сброса пароля', 'error')
         return redirect(url_for('auth.forgot_password'))
 
-    _cleanup_expired_reset_tokens()
     reset_token = PasswordResetToken.query.filter_by(token=token, used=False).first()
     if not reset_token or reset_token.expires_at < datetime.utcnow():
         flash('Ссылка для сброса пароля недействительна или истекла', 'error')
@@ -222,7 +242,7 @@ def reset_password():
 
         valid, msg = validate_password(password)
         if not valid:
-            flash(msg or 'Некорректный пароль. Пароль должен содержать минимум 8 символов, хотя бы одну заглавную букву, одну строчную букву, одну цифру и один спецсимвол.', 'error')
+            flash(msg, 'error')
             return render_template('reset_password.html', token=token), 400
 
         user = User.query.get(reset_token.user_id)
@@ -230,19 +250,9 @@ def reset_password():
             flash('Пользователь не найден', 'error')
             return redirect(url_for('auth.forgot_password'))
 
-        with db.session.begin():
-            user.set_password(password)
-            reset_token.used = True
-
-        notification_subject = 'SmartTo-DoList: пароль был изменён'
-        notification_body = (
-            'Пароль для вашего аккаунта SmartTo-DoList был успешно изменён.\n\n'
-            'Если это были не вы, немедленно обратитесь в службу поддержки и сбросьте пароль снова.\n'
-        )
-        if send_email(to_email=user.email, subject=notification_subject, body_text=notification_body):
-            logger.info('Password reset notification sent to user_id=%s', user.id)
-        else:
-            logger.warning('Password reset notification failed for user_id=%s', user.id)
+        user.set_password(password)
+        reset_token.used = True
+        db.session.commit()
 
         flash('Пароль успешно сброшен. Войдите в систему с новым паролем.', 'success')
         return redirect(url_for('auth.login'))

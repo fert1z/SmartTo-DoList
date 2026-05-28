@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Подтверждение Email — SmartTo-DoList{% endblock %}
+
+{% block head_css %}
+<link rel="stylesheet" href="/static/css/login.css">
+{% endblock %}
+
+{% block content %}
+<main class="auth-main">
+    <div class="auth-card">
+        <h2 class="auth-title">Подтверждение Email</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="auth-alert auth-alert--{{ category|default('info') }}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <p style="text-align: center; color: var(--text-muted); margin-top: -1rem; margin-bottom: 1.5rem;">
+            Введите ваш email, чтобы получить новое письмо со ссылкой для активации аккаунта.
+        </p>
+
+        <form action="/auth/resend-confirmation" method="post" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+            </div>
+
+            <button type="submit" class="auth-submit">Отправить письмо</button>
+        </form>
+        <p class="auth-footer">
+            Уже подтвердили? <a href="/auth/login">Войти</a>
+        </p>
+    </div>
+</main>
+{% endblock %}
