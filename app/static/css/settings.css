@@ -1,8 +1,113 @@
-/* Settings Styles */
+/* --- Settings Page --- */
 .settings-main {
     max-width: 720px;
-    margin: 0 auto;
-    padding: 1rem 1.5rem 3rem;
+    margin: 2rem auto 4rem;
+    padding: 0 1.5rem;
+}
+
+.settings-main h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.settings-alert {
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.settings-alert--success {
+    background: rgba(77, 175, 82, 0.1);
+    color: #4CAF50;
+    border-color: rgba(77, 175, 82, 0.2);
+}
+
+.settings-alert--error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.setting-group {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-soft);
+}
+
+.setting-group h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+}
+
+.setting-group--danger {
+    border-left: 4px solid #ef4444;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.setting-group input,
+.setting-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--bg-main);
+    color: var(--text-main);
+    transition: var(--transition);
+}
+
+.setting-group input:focus,
+.setting-group select:focus {
+    outline: none;
+    border-color: var(--text-link);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+}
+
+.field-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.setting-group--actions {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1.05rem;
 }
 
 .telegram-panel code {
@@ -10,124 +115,52 @@
     padding: 2px 6px;
     border-radius: 4px;
     color: var(--text-main);
+    font-family: ui-monospace, monospace;
 }
 
-.telegram-status {
-    margin: 0 0 12px;
+.telegram-hint, .telegram-status {
+    color: var(--text-muted);
     line-height: 1.5;
+    margin: 0 0 1rem;
 }
 
 .telegram-status--ok {
     color: #4CAF50;
 }
 
-.telegram-hint {
-    margin: 0 0 12px;
-    line-height: 1.5;
+.btn-secondary {
+    background: var(--bg-card);
     color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+}
+.btn-secondary:hover {
+    border-color: var(--text-link);
+    color: var(--text-link);
 }
 
 .telegram-code-box {
-    margin-top: 12px;
-    padding: 12px;
-    background: rgba(77, 175, 82, 0.1);
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--bg-main);
     border-radius: 8px;
-    border: 1px solid rgba(77, 175, 82, 0.2);
+    border: 1px solid var(--border-color);
 }
 
 .telegram-code {
     font-size: 1.5rem;
     font-weight: 700;
-    letter-spacing: 0.15em;
-    margin: 8px 0 0;
+    letter-spacing: 0.1em;
+    margin: 0.5rem 0 0;
     font-family: ui-monospace, monospace;
     color: var(--text-main);
+    word-break: break-all;
 }
 
 .telegram-msg {
-    margin-top: 10px;
+    margin-top: 0.75rem;
     color: #ef4444;
     min-height: 1.2em;
-}
-
-.btn-secondary {
-    margin-top: 0;
-    background-color: var(--text-muted);
-}
-
-.btn-secondary:hover {
-    filter: brightness(1.1);
-}
-
-.setting-group {
-    background-color: var(--bg-card);
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    border-left: 4px solid var(--text-link);
-    box-shadow: var(--shadow-soft);
-}
-
-.setting-group label {
-    display: block;
-    margin-bottom: 10px;
     font-weight: 500;
-    color: var(--text-main);
-    font-size: 16px;
-}
-
-.setting-group select,
-.setting-group input[type="email"],
-.setting-group input[type="password"],
-.setting-group input[type="text"],
-.setting-group input[type="checkbox"] {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 14px;
-    color: var(--text-main);
-    background: var(--bg-main);
-}
-
-.setting-group select {
-    width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
-}
-
-.setting-group input[type="email"],
-.setting-group input[type="password"],
-.setting-group input[type="text"] {
-    width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
-}
-
-.setting-group input[type="checkbox"] {
-    margin-right: 10px;
-    width: auto;
-    cursor: pointer;
-}
-
-.setting-group input[type="checkbox"] + label {
-    display: inline;
-    margin: 0;
-    cursor: pointer;
-}
-
-button {
-    margin-top: 20px;
-    padding: 12px 30px;
-    background-color: var(--text-link);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: 16px;
-    cursor: pointer;
-    transition: filter 0.3s ease;
-}
-
-button:hover {
-    filter: brightness(1.1);
 }

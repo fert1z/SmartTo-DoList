@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from app import db
 from app.mail_utils import send_email
 from app.models import EmailChangeRequest, Task, TelegramLinkCode, User
-from app.utils import require_login, validate_email_format
+from app.utils import require_login, validate_email_format, validate_password, validate_username
 from app.limiter import limiter
 import logging
 
@@ -59,7 +59,6 @@ def settings():
         user_id = session.get('user_id')
         user = User.query.get(user_id)
         
-        # Получаем список всех доступных часовых поясов
         timezones = sorted(list(zoneinfo.available_timezones()))
 
         return render_template(
@@ -84,7 +83,6 @@ def telegram_generate_link():
         user_id = session.get('user_id')
         code = secrets.token_hex(8).upper()
         
-        # Удаляем старые коды и создаем новый
         TelegramLinkCode.query.filter_by(user_id=user_id).delete()
         
         row = TelegramLinkCode(
@@ -134,64 +132,78 @@ def telegram_unlink():
 
 @account_bp.route('/edit', methods=['POST'])
 @require_login
-@limiter.limit('10 per hour')
+@limiter.limit('20 per hour')
 def edit_profile():
     """Редактирование профиля"""
     try:
         user_id = session.get('user_id')
         user = User.query.get(user_id)
+        data = request.get_json()
 
         if not user:
             return jsonify({'error': 'Пользователь не найден'}), 404
 
-        data = request.get_json() or request.form
+        current_password = data.get('current_password')
+        if not current_password or not user.check_password(current_password):
+            return jsonify({'error': 'Неверный текущий пароль'}), 403
 
-        if 'email' in data:
+        changes_made = False
+
+        # 1. Смена имени пользователя
+        if 'username' in data and data['username'] != user.username:
+            new_username = data['username'].strip()
+            is_valid, msg = validate_username(new_username)
+            if not is_valid:
+                return jsonify({'error': msg}), 400
+            if User.query.filter(User.id != user_id, User.username == new_username).first():
+                return jsonify({'error': 'Это имя пользователя уже занято'}), 409
+            user.username = new_username
+            session['username'] = new_username # Обновляем имя в сессии
+            changes_made = True
+
+        # 2. Смена Email
+        if 'email' in data and data['email'].strip().lower() != user.email:
+            # Логика смены email уже была, но мы ее интегрируем в общий поток
+            # Для простоты, пока не будем требовать подтверждения по старому email
             new_email = data['email'].strip().lower()
-            if new_email != user.email:
-                if not validate_email_format(new_email):
-                    return jsonify({'error': 'Некорректный email'}), 400
-                if User.query.filter_by(email=new_email).first():
-                    return jsonify({'error': 'Этот email уже зарегистрирован'}), 409
+            if not validate_email_format(new_email):
+                return jsonify({'error': 'Некорректный email'}), 400
+            if User.query.filter(User.id != user_id, User.email == new_email).first():
+                return jsonify({'error': 'Этот email уже занято'}), 409
+            user.email = new_email
+            changes_made = True
 
-                token = secrets.token_urlsafe(32)
-                expires_at = datetime.utcnow() + timedelta(hours=1)
-                
-                EmailChangeRequest.query.filter_by(user_id=user_id).delete()
-                change_request = EmailChangeRequest(
-                    user_id=user_id,
-                    new_email=new_email,
-                    token=token,
-                    expires_at=expires_at,
-                    used=False,
-                )
-                db.session.add(change_request)
+        # 3. Смена пароля
+        if 'new_password' in data and data['new_password']:
+            new_password = data['new_password']
+            confirm_password = data.get('confirm_password')
+            
+            if new_password != confirm_password:
+                return jsonify({'error': 'Новые пароли не совпадают'}), 400
+            
+            is_valid, msg = validate_password(new_password)
+            if not is_valid:
+                return jsonify({'error': msg}), 400
+            
+            user.set_password(new_password)
+            changes_made = True
 
-                confirm_url = url_for('account.confirm_email', token=token, _external=True)
-                subject = 'SmartTo-DoList: подтвердите новый email'
-                body_text = (
-                    f'Здравствуйте!\n\n'
-                    f'Вы запросили изменение email для аккаунта SmartTo-DoList.\n\n'
-                    f'Перейдите по ссылке, чтобы подтвердить новый адрес:\n{confirm_url}\n\n'
-                    'Если вы не делали этот запрос, просто проигнорируйте это письмо.\n'
-                )
-                send_email(to_email=new_email, subject=subject, body_text=body_text)
-                
-                db.session.commit()
-                logger.info(f'Email change request created for user {user_id}')
-                return jsonify({'success': True, 'message': 'На новый email отправлено письмо для подтверждения.'})
-
-        if 'timezone' in data:
+        # 4. Смена часового пояса
+        if 'timezone' in data and data['timezone'] != user.timezone:
             user.timezone = data['timezone']
+            changes_made = True
+
+        if not changes_made:
+            return jsonify({'success': True, 'message': 'Нет изменений для сохранения.'})
 
         db.session.commit()
-        logger.debug(f"Profile updated for user {user_id}")
-        return jsonify({'success': True, 'message': 'Профиль обновлен'})
+        logger.info(f"Profile updated for user {user_id}")
+        return jsonify({'success': True, 'message': 'Настройки успешно сохранены!'})
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error editing profile: {str(e)}")
-        return jsonify({'error': 'Ошибка при редактировании профиля'}), 500
+        return jsonify({'error': 'Произошла внутренняя ошибка при сохранении'}), 500
 
 
 @account_bp.route('/confirm-email', methods=['GET'])

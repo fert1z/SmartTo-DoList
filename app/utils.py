@@ -88,6 +88,9 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
             total_minutes += 90
         elif 'четверть часа' in text:
             total_minutes += 15
+        elif 'час' in text:
+            total_minutes += 60
+
             
         min_match = re.search(r'(\d+)\s*мин', text)
         if min_match: total_minutes += int(min_match.group(1))
@@ -103,7 +106,7 @@ def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime 
             
         month_match = re.search(r'(\d+)\s*месяц', text)
         if month_match: days_add += int(month_match.group(1)) * 30 # Упрощенно
-        
+
         if total_minutes > 0 or days_add > 0:
             target_dt = now + timedelta(days=days_add * multiplier, minutes=total_minutes * multiplier)
             return target_dt.astimezone(pytz.utc)

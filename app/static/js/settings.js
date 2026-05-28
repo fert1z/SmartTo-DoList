@@ -5,12 +5,24 @@
         return;
     }
 
-    var settingsForm = document.querySelector('.settings-form');
+    var settingsForm = document.getElementById('settings-form');
     var btnCode = document.getElementById('btn-telegram-code');
     var btnUnlink = document.getElementById('btn-telegram-unlink');
     var box = document.getElementById('telegram-code-box');
     var val = document.getElementById('telegram-code-value');
     var msg = document.getElementById('telegram-msg');
+    var alertBox = document.getElementById('settings-alert');
+
+    function showAlert(message, isError) {
+        if (!alertBox) {
+            alert(message);
+            return;
+        }
+        alertBox.textContent = message;
+        alertBox.className = 'settings-alert ' + (isError ? 'settings-alert--error' : 'settings-alert--success');
+        alertBox.hidden = false;
+        window.scrollTo(0, 0);
+    }
 
     // Перехват отправки формы настроек
     if (settingsForm) {
@@ -18,6 +30,12 @@
             e.preventDefault();
             var formData = new FormData(settingsForm);
             var data = Object.fromEntries(formData.entries());
+
+            // Не отправляем пустые поля пароля
+            if (!data.new_password) {
+                delete data.new_password;
+                delete data.confirm_password;
+            }
 
             fetchJson('/account/edit', {
                 method: 'POST',
@@ -27,11 +45,14 @@
                 body: JSON.stringify(data)
             })
             .then(function(response) {
-                alert(response.message || 'Настройки сохранены!');
-                window.location.reload();
+                showAlert(response.message || 'Настройки сохранены!', false);
+                // Очищаем поля паролей после успешного сохранения
+                document.getElementById('current_password').value = '';
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_password').value = '';
             })
             .catch(function(err) {
-                alert(err.error || 'Произошла ошибка');
+                showAlert(err.error || 'Произошла неизвестная ошибка.', true);
             });
         });
     }

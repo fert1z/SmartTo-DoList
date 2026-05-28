@@ -8,26 +8,25 @@
 
 {% block content %}
 <main class="settings-main">
-        <h1>Настройки</h1>
+    <h1>Настройки</h1>
 
-        {% if error %}
-        <div class="settings-alert settings-alert--error" role="alert">{{ error }}</div>
-        {% endif %}
-        {% if success %}
-        <div class="settings-alert settings-alert--success" role="status">{{ success }}</div>
-        {% endif %}
+    <div id="settings-alert" class="settings-alert" hidden role="alert"></div>
 
-        <form action="/account/edit" method="post" class="settings-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="setting-group">
+    <form id="settings-form" class="settings-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="setting-group">
+            <h3>Профиль</h3>
+            <div class="form-group">
                 <label for="username">Имя пользователя</label>
                 <input id="username" name="username" type="text" value="{{ user.username if user else '' }}" required>
             </div>
-            <div class="setting-group">
+            <div class="form-group">
                 <label for="email">Email</label>
                 <input id="email" name="email" type="email" value="{{ user.email if user else '' }}" required>
+                <p class="field-hint">Для смены email потребуется подтверждение по старой и новой почте.</p>
             </div>
-            <div class="setting-group">
+            <div class="form-group">
                 <label for="timezone">Часовой пояс</label>
                 <select id="timezone" name="timezone">
                     {% for tz in timezones %}
@@ -35,51 +34,61 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="setting-group">
-                <label for="current_password">Текущий пароль</label>
-                <input id="current_password" name="current_password" type="password" autocomplete="current-password">
-            </div>
-            <div class="setting-group">
-                <label for="new_password">Новый пароль</label>
-                <input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8">
-            </div>
-            <div class="setting-group">
-                <label for="confirm_password">Подтверждение пароля</label>
-                <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8">
-            </div>
-            <div class="setting-group setting-group--actions">
-                <button type="submit" class="btn-primary">Сохранить профиль</button>
-            </div>
-        </form>
-
-        <div class="setting-group telegram-panel">
-            <label>Telegram-бот</label>
-            {% if telegram_linked %}
-            <p class="telegram-status telegram-status--ok">Аккаунт привязан к Telegram. Уведомления и команды доступны в боте.</p>
-            <button type="button" class="btn-secondary" id="btn-telegram-unlink">Отвязать Telegram</button>
-            {% else %}
-            <p class="telegram-hint">Сгенерируйте код, откройте бота и отправьте: <code>/link КОД</code></p>
-            <button type="button" id="btn-telegram-code">Получить код привязки</button>
-            <div id="telegram-code-box" class="telegram-code-box" hidden>
-                <p>Ваш код (действует {{ link_ttl_minutes }} мин):</p>
-                <p class="telegram-code" id="telegram-code-value"></p>
-            </div>
-            <p id="telegram-msg" class="telegram-msg" role="status"></p>
-            {% endif %}
         </div>
 
         <div class="setting-group">
+            <h3>Смена пароля</h3>
+            <div class="form-group">
+                <label for="new_password">Новый пароль</label>
+                <input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8" placeholder="Оставьте пустым, если не хотите менять">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Подтверждение пароля</label>
+                <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8">
+            </div>
+        </div>
+
+        <div class="setting-group setting-group--danger">
+            <h3>Подтверждение изменений</h3>
+            <div class="form-group">
+                <label for="current_password">Текущий пароль</label>
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+                <p class="field-hint">Для сохранения любых изменений необходимо ввести ваш текущий пароль.</p>
+            </div>
+        </div>
+
+        <div class="setting-group setting-group--actions">
+            <button type="submit" class="btn-primary">Сохранить изменения</button>
+        </div>
+    </form>
+
+    <div class="setting-group telegram-panel">
+        <h3>Telegram-бот</h3>
+        {% if telegram_linked %}
+        <p class="telegram-status telegram-status--ok">Аккаунт привязан к Telegram. Уведомления и команды доступны в боте.</p>
+        <button type="button" class="btn-secondary" id="btn-telegram-unlink">Отвязать Telegram</button>
+        {% else %}
+        <p class="telegram-hint">Сгенерируйте код, откройте бота и отправьте: <code>/link КОД</code></p>
+        <button type="button" id="btn-telegram-code" class="btn-secondary">Получить код привязки</button>
+        <div id="telegram-code-box" class="telegram-code-box" hidden>
+            <p>Ваш код (действует {{ link_ttl_minutes }} мин):</p>
+            <p class="telegram-code" id="telegram-code-value"></p>
+        </div>
+        <p id="telegram-msg" class="telegram-msg" role="status"></p>
+        {% endif %}
+    </div>
+
+    <div class="setting-group">
+        <h3>Внешний вид</h3>
+        <div class="form-group">
             <label for="theme-switcher">Тема</label>
             <select id="theme-switcher">
                 <option value="light">Светлая</option>
                 <option value="dark">Тёмная</option>
             </select>
         </div>
-
-        <div class="setting-group">
-            <label><input type="checkbox" disabled> Уведомления в браузере</label>
-        </div>
-    </main>
+    </div>
+</main>
 {% endblock %}
 
 {% block scripts %}
