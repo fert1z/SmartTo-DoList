@@ -6,6 +6,7 @@ from email_validator import validate_email, EmailNotValidError
 from datetime import datetime, timedelta, timezone
 import pytz
 import logging
+from typing import Optional
 
 from app import db
 
@@ -50,7 +51,7 @@ def validate_password(password):
 
 # --- Refactored Natural Language Time Parser ---
 
-def _parse_relative_time(text: str, now: datetime) -> datetime | None:
+def _parse_relative_time(text: str, now: datetime) -> Optional[datetime]:
     if 'через' in text or 'назад' in text:
         is_past = 'назад' in text
         multiplier = -1 if is_past else 1
@@ -81,7 +82,7 @@ def _parse_relative_time(text: str, now: datetime) -> datetime | None:
             return now + timedelta(days=days_add * multiplier, minutes=total_minutes * multiplier)
     return None
 
-def _parse_abstract_days(text: str, now: datetime) -> datetime.date | None:
+def _parse_abstract_days(text: str, now: datetime) -> Optional[datetime.date]:
     if 'послезавтра' in text or 'через день' in text: return now.date() + timedelta(days=2)
     if 'завтра' in text: return now.date() + timedelta(days=1)
     if 'сегодня' in text: return now.date()
@@ -89,7 +90,7 @@ def _parse_abstract_days(text: str, now: datetime) -> datetime.date | None:
     if 'вчера' in text: return now.date() - timedelta(days=1)
     return None
 
-def _parse_exact_date(text: str, now: datetime) -> datetime.date | None:
+def _parse_exact_date(text: str, now: datetime) -> Optional[datetime.date]:
     months = {'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4, 'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8, 'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12}
     month_pattern = '|'.join(months.keys())
     match = re.search(rf'(\d{{1,2}})\s+({month_pattern})', text)
@@ -103,7 +104,7 @@ def _parse_exact_date(text: str, now: datetime) -> datetime.date | None:
             pass
     return None
 
-def _parse_weekdays(text: str, now: datetime) -> datetime.date | None:
+def _parse_weekdays(text: str, now: datetime) -> Optional[datetime.date]:
     weekdays = {'понедельник': 0, 'вторник': 1, 'сред': 2, 'четверг': 3, 'пятниц': 4, 'суббот': 5, 'воскресень': 6}
     is_next_week = 'следующ' in text
     
@@ -121,7 +122,7 @@ def _parse_weekdays(text: str, now: datetime) -> datetime.date | None:
             return now.date() + timedelta(days=days_ahead)
     return None
 
-def _parse_time(text: str) -> datetime.time | None:
+def _parse_time(text: str) -> Optional[datetime.time]:
     time_words = {'утр': 9, 'обед': 13, 'днем': 14, 'после работы': 18, 'вечер': 18, 'ночь': 23}
     for word, hour in time_words.items():
         if word in text:
@@ -139,7 +140,7 @@ def _parse_time(text: str) -> datetime.time | None:
             return datetime.min.time().replace(hour=hour)
     return None
 
-def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> datetime | None:
+def parse_natural_time_local(text: str, user_timezone: str = 'UTC') -> Optional[datetime]:
     logger.info("--- RUNNING REFACTORED LOCAL PARSER ---")
     if not text: return None
         
