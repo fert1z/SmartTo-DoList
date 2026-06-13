@@ -1,9 +1,10 @@
 """
-Модели данных приложения
+Application data models
 """
 from __future__ import annotations
-
+import hashlib
 from datetime import datetime, timezone
+import enum
 
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -13,8 +14,20 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class TaskStatus(enum.Enum):
+    PENDING = 'pending'
+    IN_PROGRESS = 'in_progress'
+    COMPLETED = 'completed'
+
+
+class TaskPriority(enum.Enum):
+    LOW = 'low'
+    MEDIUM = 'medium'
+    HIGH = 'high'
+
+
 class User(db.Model):
-    """Модель пользователя"""
+    """User model"""
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -42,9 +55,14 @@ class User(db.Model):
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password, password)
 
+    def avatar(self, size: int) -> str:
+        """Generates a user avatar URL using Gravatar."""
+        digest = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+        return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+
 
 class Task(db.Model):
-    """Модель задачи"""
+    """Task model"""
     __tablename__ = 'tasks'
     __table_args__ = (
         db.Index('ix_tasks_user_status', 'user_id', 'status'),
@@ -54,8 +72,8 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False, index=True)
     description = db.Column(db.Text)
-    priority = db.Column(db.String(10), default='medium')
-    status = db.Column(db.String(20), default='pending')
+    priority = db.Column(db.Enum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False)
+    status = db.Column(db.Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
     due_date = db.Column(db.DateTime)
     category = db.Column(db.String(50), default='personal')
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
@@ -69,11 +87,11 @@ class Task(db.Model):
         return f'<Task {self.title}>'
 
     def complete(self) -> None:
-        self.status = 'completed'
+        self.status = TaskStatus.COMPLETED
         self.completed_at = _utcnow()
 
     def is_overdue(self) -> bool:
-        if not self.due_date or self.status == 'completed':
+        if not self.due_date or self.status == TaskStatus.COMPLETED:
             return False
         due_dt = self.due_date
         if due_dt.tzinfo is None:
@@ -82,7 +100,7 @@ class Task(db.Model):
 
 
 class EmailConfirmationToken(db.Model):
-    """Одноразовый токен для подтверждения email при регистрации."""
+    """One-time token for email confirmation during registration."""
     __tablename__ = 'email_confirmation_tokens'
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(64), unique=True, nullable=False, index=True)
@@ -93,7 +111,7 @@ class EmailConfirmationToken(db.Model):
 
 
 class TelegramLinkCode(db.Model):
-    """Одноразовый код привязки Telegram к аккаунту."""
+    """One-time code for linking a Telegram account."""
     __tablename__ = 'telegram_link_codes'
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(16), unique=True, nullable=False, index=True)
@@ -103,7 +121,7 @@ class TelegramLinkCode(db.Model):
 
 
 class PasswordResetToken(db.Model):
-    """Одноразовый токен для сброса пароля."""
+    """One-time token for password reset."""
     __tablename__ = 'password_reset_tokens'
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(64), unique=True, nullable=False, index=True)
@@ -114,7 +132,7 @@ class PasswordResetToken(db.Model):
 
 
 class EmailChangeRequest(db.Model):
-    """Запрос на подтверждение изменения email."""
+    """Request to confirm an email change."""
     __tablename__ = 'email_change_requests'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
@@ -126,7 +144,7 @@ class EmailChangeRequest(db.Model):
 
 
 class ReminderLog(db.Model):
-    """Лог отправок напоминаний для задач."""
+    """Log of reminder notifications for tasks."""
     __tablename__ = 'reminder_logs'
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False, index=True)

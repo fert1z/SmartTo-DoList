@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Регистрация — SmartTo-DoList{% endblock %}
+{% block title %}Register - SmartTo-DoList{% endblock %}
 
 {% block head_css %}
-<link rel="stylesheet" href="/static/css/login.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 {% endblock %}
 
 {% block content %}
 <main class="auth-main">
     <div class="auth-card auth-card--wide">
-        <h2 class="auth-title">Создание аккаунта</h2>
+        <h2 class="auth-title">Create an account</h2>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -21,11 +21,11 @@
             {% endif %}
         {% endwith %}
 
-        <form id="registration_form" action="/auth/register" method="post" class="auth-form">
+        <form id="registration_form" action="{{ url_for('auth.register') }}" method="post" class="auth-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="form-group">
-                <label for="username">Имя пользователя</label>
+                <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autocomplete="username" minlength="3">
             </div>
 
@@ -35,19 +35,19 @@
             </div>
 
             <div class="form-group">
-                <label for="password">Пароль</label>
+                <label for="password">Password</label>
                 <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8">
-                <p class="field-hint">Минимум 8 символов, включая заглавную и строчную буквы, цифру и спецсимвол.</p>
+                <p class="field-hint">Minimum 8 characters, including uppercase and lowercase letters, a number, and a special character.</p>
             </div>
 
             <div class="form-group">
-                <label for="confirm_password">Повтор пароля</label>
+                <label for="confirm_password">Confirm password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password" minlength="8">
             </div>
 
-            <button type="submit" class="auth-submit">Создать аккаунт</button>
+            <button type="submit" class="auth-submit">Create account</button>
         </form>
-        <p class="auth-footer">Уже есть аккаунт? <a href="/auth/login">Войти</a></p>
+        <p class="auth-footer">Already have an account? <a href="{{ url_for('auth.login') }}">Login</a></p>
     </div>
 </main>
 {% endblock %}

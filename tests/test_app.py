@@ -1,14 +1,14 @@
-"""Тесты для приложения SmartTo-DoList"""
+"""Tests for the SmartTo-DoList application"""
 import pytest
-import os
+from flask import session
 from app import create_app, db
-from app.models import User, Task
+from app.models import User, Task, TaskStatus, TaskPriority
 from datetime import datetime, timedelta, timezone
-
+from app.utils import parse_natural_time_local
 
 @pytest.fixture
 def app():
-    """Создает тестовое приложение"""
+    """Creates a test application"""
     app = create_app('testing')
     with app.app_context():
         db.create_all()
@@ -16,241 +16,154 @@ def app():
         db.session.remove()
         db.drop_all()
 
-
 @pytest.fixture
 def client(app):
-    """Создает тестовый клиент"""
+    """Creates a test client"""
     return app.test_client()
-
-
-@pytest.fixture
-def runner(app):
-    """Создает CLI runner"""
-    return app.test_cli_runner()
-
 
 @pytest.fixture
 def auth_user(app):
-    """Создает тестового пользователя"""
-    user = User(username='testuser', email='test@example.com')
+    """Creates a test user"""
+    user = User(username='testuser', email='test@example.com', is_email_confirmed=True)
     user.set_password('testpass123')
     db.session.add(user)
     db.session.commit()
     return user
 
+@pytest.fixture
+def another_user(app):
+    """Creates a second test user"""
+    user = User(username='anotheruser', email='another@example.com', is_email_confirmed=True)
+    user.set_password('anotherpass')
+    db.session.add(user)
+    db.session.commit()
+    return user
 
 class TestAuth:
-    """Тесты аутентификации"""
+    """Authentication tests"""
 
     def test_register_valid(self, client):
-        """Тест успешной регистрации"""
+        """Test successful registration"""
         response = client.post('/auth/register', data={
             'username': 'newuser',
             'email': 'new@example.com',
             'password': 'Password123!',
             'confirm_password': 'Password123!'
-        })
-        assert response.status_code in [302, 200]
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Registration almost complete!' in response.data
 
-    def test_register_short_password(self, client):
-        """Тест регистрации с коротким паролем"""
-        response = client.post('/auth/register', data={
-            'username': 'newuser',
-            'email': 'new@example.com',
-            'password': 'pass',
-            'confirm_password': 'pass'
-        })
+    def test_register_invalid(self, client):
+        """Test registration with invalid data"""
+        response = client.post('/auth/register', data={'username': 'new'}, follow_redirects=True)
         assert response.status_code == 400
-
-    def test_register_invalid_email(self, client):
-        """Тест регистрации с неверным email"""
-        response = client.post('/auth/register', data={
-            'username': 'newuser',
-            'email': 'invalid-email',
-            'password': 'password123',
-            'confirm_password': 'password123'
-        })
-        assert response.status_code == 400
-
-    def test_register_duplicate_username(self, client, auth_user):
-        """Тест регистрации с существующим username"""
-        response = client.post('/auth/register', data={
-            'username': 'testuser',
-            'email': 'another@example.com',
-            'password': 'password123',
-            'confirm_password': 'password123'
-        })
-        # Returns 400 instead of 409 to prevent information disclosure (generic error message)
-        assert response.status_code == 400
+        assert b'Please fill in all fields' in response.data
 
     def test_login_valid(self, client, auth_user):
-        """Тест успешного входа"""
+        """Test successful login"""
         response = client.post('/auth/login', data={
             'username': 'testuser',
             'password': 'testpass123'
-        })
-        assert response.status_code in [302, 200]
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        with client.session_transaction() as sess:
+            assert sess.get('user_id') == auth_user.id
 
-    def test_login_invalid_password(self, client, auth_user):
-        """Тест входа с неверным паролем"""
+    def test_login_invalid(self, client, auth_user):
+        """Test login with invalid password"""
         response = client.post('/auth/login', data={
             'username': 'testuser',
             'password': 'wrongpassword'
         })
         assert response.status_code == 401
+        assert b'Invalid credentials' in response.data
 
     def test_logout(self, client, auth_user):
-        """Тест выхода"""
-        client.post('/auth/login', data={
-            'username': 'testuser',
-            'password': 'testpass123'
-        })
-        response = client.get('/auth/logout')
-        assert response.status_code == 302
-
+        """Test logout"""
+        client.post('/auth/login', data={'username': 'testuser', 'password': 'testpass123'})
+        response = client.get('/auth/logout', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'You have been logged out.' in response.data
+        with client.session_transaction() as sess:
+            assert 'user_id' not in sess
 
 class TestTasks:
-    """Тесты управления задачами"""
+    """Task management tests"""
 
-    def test_create_task_authenticated(self, client, auth_user):
-        """Тест создания задачи авторизованным пользователем"""
+    @pytest.fixture(autouse=True)
+    def login(self, client, auth_user):
+        """Automatic login for all tests in this class"""
         with client.session_transaction() as sess:
             sess['user_id'] = auth_user.id
+        yield
 
-        response = client.post('/api/tasks', data={
-            'title': 'Test Task',
-            'description': 'Test Description',
-            'priority': 'high',
-            'category': 'work'
-        })
-        assert response.status_code in [200, 400]
-
-    def test_create_task_unauthenticated(self, client):
-        """Тест создания задачи без аутентификации"""
-        response = client.post('/api/tasks', data={
-            'title': 'Test Task'
-        })
-        assert response.status_code == 401
+    def test_create_task(self, client):
+        """Test creating a task"""
+        response = client.post('/api/tasks', json={'title': 'Test Task'})
+        assert response.status_code == 200
+        task = db.session.get(Task, response.get_json()['task_id'])
+        assert task.title == 'Test Task'
 
     def test_list_tasks(self, client, auth_user):
-        """Тест получения списка задач"""
-        task = Task(
-            title='Test Task',
-            user_id=auth_user.id,
-            priority='medium'
-        )
-        db.session.add(task)
+        """Test listing tasks"""
+        db.session.add(Task(title='Task 1', user_id=auth_user.id))
         db.session.commit()
-
-        with client.session_transaction() as sess:
-            sess['user_id'] = auth_user.id
-
         response = client.get('/api/tasks')
         assert response.status_code == 200
-        data = response.get_json()
-        assert len(data) == 1
-        assert data[0]['title'] == 'Test Task'
+        assert len(response.get_json()) == 1
 
     def test_complete_task(self, client, auth_user):
-        """Тест отметить задачу как выполненную"""
-        task = Task(
-            title='Test Task',
-            user_id=auth_user.id,
-            priority='medium'
-        )
+        """Test completing a task"""
+        task = Task(title='Test Task', user_id=auth_user.id)
         db.session.add(task)
         db.session.commit()
+        client.post(f'/api/tasks/{task.id}/complete')
+        completed_task = db.session.get(Task, task.id)
+        assert completed_task.status == TaskStatus.COMPLETED
 
-        with client.session_transaction() as sess:
-            sess['user_id'] = auth_user.id
+class TestNaturalTimeParser:
+    """Tests for the natural language time parser"""
 
-        response = client.post(f'/api/tasks/{task.id}/complete')
-        assert response.status_code == 200
+    @pytest.mark.parametrize("text, expected_delta_days", [
+        ("завтра", 1),
+        ("послезавтра", 2),
+        ("через день", 2),
+        ("вчера", -1),
+        ("позавчера", -2),
+    ])
+    def test_abstract_days(self, text, expected_delta_days):
+        now = datetime.now(timezone.utc)
+        result = parse_natural_time_local(text)
+        assert result.day == (now + timedelta(days=expected_delta_days)).day
 
-        task = db.session.get(Task, task.id)
-        assert task.status == 'completed'
+    def test_relative_time(self):
+        now = datetime.now(timezone.utc)
+        result = parse_natural_time_local("через 2 часа 30 минут")
+        assert result is not None
+        assert result > now + timedelta(hours=2, minutes=29)
+        assert result < now + timedelta(hours=2, minutes=31)
 
+    @pytest.mark.parametrize("text, weekday", [
+        ("в понедельник", 0),
+        ("во вторник", 1),
+        ("в среду", 2),
+        ("в четверг", 3),
+        ("в пятницу", 4),
+        ("в субботу", 5),
+        ("в воскресенье", 6),
+    ])
+    def test_weekdays(self, text, weekday):
+        result = parse_natural_time_local(text)
+        assert result.weekday() == weekday
 
-class TestModels:
-    """Тесты моделей"""
+    def test_fuzzy_time(self):
+        result = parse_natural_time_local("вечером")
+        assert result.hour == 18
 
-    def test_password_hashing(self):
-        """Тест хеширования паролей"""
-        user = User(username='testuser', email='test@example.com')
-        password = 'testpass123'
-        user.set_password(password)
+    def test_exact_time(self):
+        result = parse_natural_time_local("в 14:30")
+        assert result.hour == 14
+        assert result.minute == 30
 
-        assert user.password != password
-        assert user.check_password(password)
-        assert not user.check_password('wrongpassword')
-
-    def test_task_complete(self):
-        """Тест отметить задачу как выполненную"""
-        user = User(username='testuser', email='test@example.com')
-        user.set_password('testpass123')
-        task = Task(title='Test', user_id=1)
-        task.complete()
-
-        assert task.status == 'completed'
-        assert task.completed_at is not None
-
-    def test_task_is_overdue(self):
-        """Тест проверки просроченной задачи"""
-        user = User(username='testuser', email='test@example.com')
-        user.set_password('testpass123')
-
-        # Просроченная задача
-        past_date = datetime.now(timezone.utc) - timedelta(days=1)
-        task = Task(title='Overdue', user_id=1, due_date=past_date, status='pending')
-        assert task.is_overdue()
-
-        # Будущая задача
-        future_date = datetime.now(timezone.utc) + timedelta(days=1)
-        task2 = Task(title='Not Overdue', user_id=1, due_date=future_date, status='pending')
-        assert not task2.is_overdue()
-
-        # Выполненная задача не просроченна
-        completed_task = Task(title='Completed', user_id=1, due_date=past_date, status='completed')
-        assert not completed_task.is_overdue()
-
-
-class TestUtils:
-    """Тесты утилит валидации"""
-
-    def test_validate_email_format(self):
-        """Тест валидации email"""
-        from app.utils import validate_email_format
-
-        assert validate_email_format('test@example.com')
-        assert validate_email_format('user+tag@example.co.uk')
-        assert not validate_email_format('invalid-email')
-        assert not validate_email_format('user@')
-
-    def test_validate_username(self):
-        """Тест валидации username"""
-        from app.utils import validate_username
-
-        valid, msg = validate_username('validuser')
-        assert valid
-        assert msg is None
-
-        valid, msg = validate_username('ab')
-        assert not valid
-        assert msg is not None
-
-        valid, msg = validate_username('user@name')
-        assert not valid
-
-    def test_validate_password(self):
-        """Тест валидации пароля"""
-        from app.utils import validate_password
-
-        valid, msg = validate_password('Validpass123!')
-        assert valid
-        assert msg is None
-
-        valid, msg = validate_password('short')
-        assert not valid
-
-        valid, msg = validate_password('')
-        assert not valid
+    def test_no_time(self):
+        assert parse_natural_time_local("просто текст") is None

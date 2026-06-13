@@ -1,64 +1,64 @@
 {% extends 'base.html' %}
 
-{% block title %}О проекте - SmartTo-DoList{% endblock %}
+{% block title %}About - SmartTo-DoList{% endblock %}
 
 {% block head_css %}
-<link rel="stylesheet" href="/static/css/about.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
 {% endblock %}
 
 {% block content %}
 <main class="about-main">
     <section class="about-section">
-        <h2>О проекте SmartTo-DoList</h2>
+        <h2>About SmartTo-DoList</h2>
         <p>
-            <strong>SmartTo-DoList</strong> — это современное веб-приложение для управления задачами и напоминаниями,
-            с использованием искусственного интеллекта. Наше приложение помогает вам организовать работу,
-            учёбу и личные дела, не упустив ничего важного.
+            <strong>SmartTo-DoList</strong> is a modern web application for managing tasks and reminders,
+            using artificial intelligence. Our application helps you organize your work,
+            studies, and personal affairs, without missing anything important.
         </p>
         <p>
-            С помощью умных функций вы сможете быстро добавлять задачи, устанавливать приоритеты, получать
-            своевременные напоминания и синхронизировать все со своим Telegram-ботом.
+            With smart features, you can quickly add tasks, set priorities, get
+            timely reminders, and sync everything with your Telegram bot.
         </p>
     </section>
 
     <section class="about-section">
-        <h2>🧠 Умные функции</h2>
+        <h2>🧠 Smart Features</h2>
         <div class="feature-grid">
             <div class="feature-card">
-                <h3>🎯 Умные напоминания</h3>
-                <p>Система автоматически определяет приоритет ваших задач и напоминает о них в нужный момент.</p>
+                <h3>🎯 Smart Reminders</h3>
+                <p>The system automatically determines the priority of your tasks and reminds you of them at the right time.</p>
             </div>
             <div class="feature-card">
-                <h3>📱 Синхронизация с Telegram</h3>
-                <p>Получайте уведомления о задачах прямо в Telegram и управляйте ими из мессенджера.</p>
+                <h3>📱 Telegram Sync</h3>
+                <p>Get task notifications right in Telegram and manage them from the messenger.</p>
             </div>
             <div class="feature-card">
-                <h3>🗣️ Распознавание речи</h3>
-                <p>Добавляйте задачи голосом! Просто говорите, что нужно сделать, и нейросеть создаст задачу.</p>
+                <h3>🗣️ Speech Recognition</h3>
+                <p>Add tasks by voice! Just say what you need to do, and the neural network will create a task.</p>
             </div>
             <div class="feature-card">
-                <h3>⏰ Нечёткие сроки</h3>
-                <p>Указывайте сроки в естественном языке: «на следующей неделе», «в пятницу», «через 3 дня».</p>
+                <h3>⏰ Fuzzy Deadlines</h3>
+                <p>Specify deadlines in natural language: "next week", "on Friday", "in 3 days".</p>
             </div>
         </div>
     </section>
 
     <section class="about-section">
-        <h2>📖 Инструкции</h2>
+        <h2>📖 Instructions</h2>
         <div class="instruction-step">
-            <h4>Синхронизация с Telegram</h4>
+            <h4>Telegram Sync</h4>
             <ol>
-                <li>Откройте Telegram и найдите бота <code class="instruction-hint">@SmartToDo_bot</code></li>
-                <li>Нажмите "Начать" (/start)</li>
-                <li>Свяжите аккаунт с помощью кода из раздела "Настройки" в приложении</li>
+                <li>Open Telegram and find the bot <code class="instruction-hint">@SmartToDo_bot</code></li>
+                <li>Press "Start" (/start)</li>
+                <li>Link your account using the code from the "Settings" section in the application</li>
             </ol>
         </div>
         <div class="instruction-step">
-            <h4>Примеры нечётких сроков</h4>
+            <h4>Examples of fuzzy deadlines</h4>
             <div class="instruction-hint">
-                <p>✅ <code>На следующей неделе</code></p>
-                <p>✅ <code>В пятницу вечером</code></p>
-                <p>✅ <code>Через 3 дня</code></p>
+                <p>✅ <code>next week</code></p>
+                <p>✅ <code>on Friday evening</code></p>
+                <p>✅ <code>in 3 days</code></p>
             </div>
         </div>
     </section>
@@ -66,17 +66,17 @@
     <section class="about-section">
         <h2>❓ FAQ</h2>
         <div class="faq-item">
-            <h4>▶ Безопасны ли мои данные?</h4>
-            <div class="faq-answer">Да, все данные хранятся в зашифрованном виде, и мы используем SSL/TLS для защиты передачи данных.</div>
+            <h4>▶ Are my data secure?</h4>
+            <div class="faq-answer">Yes, all data is stored encrypted, and we use SSL/TLS to protect data transmission.</div>
         </div>
         <div class="faq-item">
-            <h4>▶ Какие браузеры поддерживаются?</h4>
-            <div class="faq-answer">Chrome, Firefox, Safari, Edge. Рекомендуется использовать последние версии.</div>
+            <h4>▶ Which browsers are supported?</h4>
+            <div class="faq-answer">Chrome, Firefox, Safari, Edge. It is recommended to use the latest versions.</div>
         </div>
     </section>
 
     <section class="about-section">
-        <h2>📞 Контакты</h2>
+        <h2>📞 Contacts</h2>
         <div class="contact-info">
             <div class="contact-item">
                 <strong>📧 Email</strong>
@@ -94,24 +94,16 @@
     </section>
 
     <section class="cta-section">
-        <h2>Готовы начать?</h2>
-        <p>Присоединяйтесь к тысячам пользователей, которые уже повысили свою продуктивность!</p>
+        <h2>Ready to start?</h2>
+        <p>Join thousands of users who have already increased their productivity!</p>
         <div class="cta-buttons">
-            <a href="/auth/register" class="cta-button cta-primary">Создать аккаунт</a>
-            <a href="/" class="cta-button cta-secondary">На главную</a>
+            <a href="{{ url_for('auth.register') }}" class="cta-button cta-primary">Create an account</a>
+            <a href="{{ url_for('main.index') }}" class="cta-button cta-secondary">To the main page</a>
         </div>
     </section>
 </main>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // Простой аккордеон для FAQ
-    document.querySelectorAll('.faq-item h4').forEach(function(header) {
-        header.addEventListener('click', function() {
-            var answer = this.nextElementSibling;
-            answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
-        });
-    });
-</script>
+<script src="{{ url_for('static', filename='js/faq.js') }}"></script>
 {% endblock %}

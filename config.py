@@ -1,8 +1,12 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
-    """Базовая конфигурация приложения"""
+    """Base application configuration"""
     # Flask
     DEBUG = False
     ENV = 'production'
@@ -12,7 +16,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
-    # Безопасность
+    # Security
     SECRET_KEY = os.environ.get('SECRET_KEY')
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_COOKIE_SECURE = True
@@ -20,11 +24,11 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     MAIL_REQUIRE_AUTH = os.environ.get('MAIL_REQUIRE_AUTH', '1').strip().lower() in ('1', 'true', 'yes', 'y', 'on')
     
-    # Телеграм
+    # Telegram
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
     TELEGRAM_API_URL = 'https://api.telegram.org'
 
-    # Почта для восстановления пароля
+    # Mail for password recovery
     MAIL_SERVER = os.environ.get('MAIL_SERVER', '')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', '587') or 587)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', '1').lower() in ('1', 'true', 'yes')
@@ -32,23 +36,23 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'no-reply@smarttodolist.local')
     
-    # ИИ функции (опционально)
+    # AI features (optional)
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-    # Пагинация
+    # Pagination
     ITEMS_PER_PAGE = 10
 
-    # Планировщик напоминаний
+    # Reminder scheduler
     SCHEDULER_ENABLED = True
     REMINDER_INTERVAL_MINUTES = 5
     REMINDER_LOOKAHEAD_MINUTES = 15
 
-    # Максимальный размер файла (5MB)
+    # Max file size (5MB)
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
 
 class DevelopmentConfig(Config):
-    """Конфигурация для разработки"""
+    """Development configuration"""
     DEBUG = True
     ENV = 'development'
     TESTING = False
@@ -67,23 +71,28 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    """Конфигурация для продакшена"""
+    """Production configuration"""
     DEBUG = False
     ENV = 'production'
     TESTING = False
     SESSION_COOKIE_SECURE = True
 
-    # Database - поддержка как старого, так и нового формата PostgreSQL
+    # Ensure SECRET_KEY is set in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError("No SECRET_KEY set for production app")
+
+    # Database - support for both old and new PostgreSQL formats
     _db_url = os.environ.get('DATABASE_URL', '').strip()
     if _db_url:
-        # Убеждаемся, что используется правильный драйвер psycopg3
+        # Ensure the correct psycopg3 driver is used
         if _db_url.startswith('postgres://'):
             _db_url = _db_url.replace('postgres://', 'postgresql+psycopg://', 1)
         elif _db_url.startswith('postgresql://'):
             _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
         SQLALCHEMY_DATABASE_URI = _db_url
     else:
-        # Если DATABASE_URL не установлен, использовать SQLite
+        # If DATABASE_URL is not set, use SQLite
         BASEDIR = os.path.abspath(os.path.dirname(__file__))
         SQLALCHEMY_DATABASE_URI = os.environ.get(
             'DATABASE_URL',
@@ -92,18 +101,18 @@ class ProductionConfig(Config):
 
 
 class TestingConfig(Config):
-    """Конфигурация для тестирования"""
+    """Testing configuration"""
     DEBUG = True
     TESTING = True
     SECRET_KEY = 'testing-secret-key'
     
-    # Database для тестов (в памяти)
+    # In-memory database for tests
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
-    RATELIMIT_ENABLED = False  # Отключить rate limiting при тестировании
+    RATELIMIT_ENABLED = False  # Disable rate limiting during tests
 
 
-# Выбор конфигурации в зависимости от окружения
+# Configuration selection based on environment
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,

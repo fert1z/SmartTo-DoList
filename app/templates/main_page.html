@@ -1,62 +1,46 @@
 {% extends 'base.html' %}
 
-{% block title %}SmartTo-DoList - Главная{% endblock %}
+{% block title %}SmartTo-DoList - Main{% endblock %}
 
 {% block head_css %}
-<link rel="stylesheet" href="/static/css/landing.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
 {% endblock %}
 
 {% block content %}
 <main class="landing-main">
     <section id="hero">
-        <h2>Ваш умный помощник в планировании задач</h2>
-        <p>SmartTo-DoList поможет вам организовать свои дела, не забыть о важных событиях и повысить продуктивность с помощью искусственного интеллекта.</p>
-        <a href="/auth/register" id="try-it-now-btn">Попробовать бесплатно</a>
+        <h2>Your smart assistant for task planning</h2>
+        <p>SmartTo-DoList helps you organize your tasks, remember important events, and boost productivity with artificial intelligence.</p>
+        <a href="{{ url_for('auth.register') }}" id="try-it-now-btn">Try for free</a>
     </section>
 
     <section class="features-section">
         <div class="features-grid">
             <div class="feature-card-landing">
                 <span class="icon">🧠</span>
-                <h3>Умный Парсинг</h3>
-                <p>Пишите сроки как вам удобно: "завтра в 5", "через неделю", "в следующий вторник". Нейросеть поймет вас.</p>
+                <h3>Smart Parsing</h3>
+                <p>Write deadlines as you like: "tomorrow at 5", "in a week", "next Tuesday". The neural network will understand you.</p>
             </div>
             <div class="feature-card-landing">
                 <span class="icon">📱</span>
-                <h3>Telegram-бот</h3>
-                <p>Управляйте задачами и получайте напоминания прямо в Telegram, где бы вы ни находились.</p>
+                <h3>Telegram Bot</h3>
+                <p>Manage tasks and get reminders right in Telegram, wherever you are.</p>
             </div>
             <div class="feature-card-landing">
                 <span class="icon">🎨</span>
-                <h3>Настраиваемый Интерфейс</h3>
-                <p>Выберите светлую или тёмную тему и настройте часовой пояс для максимального комфорта.</p>
+                <h3>Customizable Interface</h3>
+                <p>Choose a light or dark theme and set your time zone for maximum comfort.</p>
             </div>
         </div>
     </section>
 
     <section class="cta-landing">
-        <h2>Начните организовывать свою жизнь уже сегодня</h2>
-        <a href="/auth/register" id="try-it-now-btn">Создать аккаунт</a>
+        <h2>Start organizing your life today</h2>
+        <a href="{{ url_for('auth.register') }}" id="try-it-now-btn">Create an account</a>
     </section>
 </main>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // Простой Intersection Observer для анимации при скролле
-    document.addEventListener("DOMContentLoaded", function() {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.animationPlayState = 'running';
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.feature-card-landing, .cta-landing').forEach(card => {
-            card.style.animationPlayState = 'paused';
-            observer.observe(card);
-        });
-    });
-</script>
+<script src="{{ url_for('static', filename='js/animations.js') }}"></script>
 {% endblock %}

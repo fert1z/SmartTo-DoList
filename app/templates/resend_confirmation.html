@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Подтверждение Email — SmartTo-DoList{% endblock %}
+{% block title %}Email Confirmation - SmartTo-DoList{% endblock %}
 
 {% block head_css %}
-<link rel="stylesheet" href="/static/css/login.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 {% endblock %}
 
 {% block content %}
 <main class="auth-main">
     <div class="auth-card">
-        <h2 class="auth-title">Подтверждение Email</h2>
+        <h2 class="auth-title">Email Confirmation</h2>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -22,10 +22,10 @@
         {% endwith %}
 
         <p style="text-align: center; color: var(--text-muted); margin-top: -1rem; margin-bottom: 1.5rem;">
-            Введите ваш email, чтобы получить новое письмо со ссылкой для активации аккаунта.
+            Enter your email to receive a new email with a link to activate your account.
         </p>
 
-        <form action="/auth/resend-confirmation" method="post" class="auth-form">
+        <form action="{{ url_for('auth.resend_confirmation') }}" method="post" class="auth-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="form-group">
@@ -33,10 +33,10 @@
                 <input type="email" id="email" name="email" required autocomplete="email">
             </div>
 
-            <button type="submit" class="auth-submit">Отправить письмо</button>
+            <button type="submit" class="auth-submit">Send email</button>
         </form>
         <p class="auth-footer">
-            Уже подтвердили? <a href="/auth/login">Войти</a>
+            Already confirmed? <a href="{{ url_for('auth.login') }}">Login</a>
         </p>
     </div>
 </main>
