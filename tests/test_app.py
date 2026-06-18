@@ -2,9 +2,9 @@
 import pytest
 from flask import session
 from app import create_app, db
-from app.models import User, Task, TaskStatus, TaskPriority
+from app.models import User, Task, TaskStatus
 from datetime import datetime, timedelta, timezone
-from app.utils import parse_natural_time_local
+from app.utils import validate_username, validate_password, parse_natural_time_local
 
 @pytest.fixture
 def app():
@@ -24,7 +24,7 @@ def client(app):
 @pytest.fixture
 def auth_user(app):
     """Creates a test user"""
-    user = User(username='testuser', email='test@example.com', is_email_confirmed=True)
+    user = User(username='testuser')
     user.set_password('testpass123')
     db.session.add(user)
     db.session.commit()
@@ -33,7 +33,7 @@ def auth_user(app):
 @pytest.fixture
 def another_user(app):
     """Creates a second test user"""
-    user = User(username='anotheruser', email='another@example.com', is_email_confirmed=True)
+    user = User(username='anotheruser')
     user.set_password('anotherpass')
     db.session.add(user)
     db.session.commit()
@@ -46,12 +46,11 @@ class TestAuth:
         """Test successful registration"""
         response = client.post('/auth/register', data={
             'username': 'newuser',
-            'email': 'new@example.com',
             'password': 'Password123!',
             'confirm_password': 'Password123!'
         }, follow_redirects=True)
         assert response.status_code == 200
-        assert b'Registration almost complete!' in response.data
+        assert b'You have successfully registered!' in response.data
 
     def test_register_invalid(self, client):
         """Test registration with invalid data"""
@@ -120,6 +119,45 @@ class TestTasks:
         client.post(f'/api/tasks/{task.id}/complete')
         completed_task = db.session.get(Task, task.id)
         assert completed_task.status == TaskStatus.COMPLETED
+
+class TestModels:
+    """Model tests"""
+
+    def test_password_hashing(self):
+        """Test password hashing"""
+        user = User(username='testuser')
+        password = 'testpass123'
+        user.set_password(password)
+        assert user.password != password
+        assert user.check_password(password)
+        assert not user.check_password('wrongpassword')
+
+    def test_user_avatar(self):
+        """Test avatar URL generation"""
+        user = User(username='testuser')
+        avatar_url = user.avatar(128)
+        assert 'gravatar.com' in avatar_url
+        assert 's=128' in avatar_url
+        assert 'identicon' in avatar_url
+
+class TestUtils:
+    """Validation utility tests"""
+
+    def test_validate_username(self):
+        """Test username validation"""
+        with pytest.raises(ValueError, match='at least 3 characters'):
+            validate_username('ab')
+        with pytest.raises(ValueError, match='can only contain letters, numbers, and underscores'):
+            validate_username('user@name')
+        validate_username('validuser')
+
+    def test_validate_password(self):
+        """Test password validation"""
+        with pytest.raises(ValueError, match='at least 8 characters'):
+            validate_password('short')
+        with pytest.raises(ValueError, match='is required'):
+            validate_password('')
+        validate_password('Validpass123!')
 
 class TestNaturalTimeParser:
     """Tests for the natural language time parser"""
