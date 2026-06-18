@@ -47,8 +47,8 @@ def register():
             
             auth_service.register_user(username, email, password, confirm_password)
             
-            logger.info(f"New user registered, confirmation sent to {email}")
-            flash('Registration almost complete! We have sent a confirmation email to you.', 'success')
+            logger.info(f"New user registered: {username}")
+            flash('You have successfully registered! You can now log in.', 'success')
             return redirect(url_for('auth.login'))
         except ValueError as e:
             flash(str(e), 'error')
@@ -59,32 +59,6 @@ def register():
             return render_template('registration.html'), 500
 
     return render_template('registration.html')
-
-
-@auth_bp.route('/confirm/<token>')
-def confirm_email(token):
-    """Email confirmation token handler."""
-    try:
-        auth_service.confirm_email(token)
-        flash('Your email has been successfully confirmed! You can now log in.', 'success')
-    except ValueError as e:
-        flash(str(e), 'error')
-    return redirect(url_for('auth.login'))
-
-
-@auth_bp.route('/resend-confirmation', methods=['GET', 'POST'])
-def resend_confirmation():
-    """Resend confirmation email."""
-    if request.method == 'POST':
-        try:
-            email = request.form.get('email', '').strip().lower()
-            auth_service.resend_confirmation_email(email)
-            flash('A new confirmation email has been sent.', 'success')
-        except ValueError as e:
-            flash(str(e), 'error')
-        return redirect(url_for('auth.login'))
-
-    return render_template('resend_confirmation.html')
 
 
 @auth_bp.route('/logout')

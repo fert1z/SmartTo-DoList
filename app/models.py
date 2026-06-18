@@ -35,7 +35,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(256), nullable=False)
     
-    is_email_confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    is_email_confirmed = db.Column(db.Boolean, nullable=False, default=True)
     email_confirmed_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
@@ -97,17 +97,6 @@ class Task(db.Model):
         if due_dt.tzinfo is None:
             due_dt = due_dt.replace(tzinfo=timezone.utc)
         return _utcnow() > due_dt
-
-
-class EmailConfirmationToken(db.Model):
-    """One-time token for email confirmation during registration."""
-    __tablename__ = 'email_confirmation_tokens'
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, nullable=False, default=False)
-    user = db.relationship('User', backref=db.backref('email_confirmation_tokens', lazy=True))
 
 
 class TelegramLinkCode(db.Model):

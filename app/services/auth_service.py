@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from flask import url_for
 from app import db
-from app.models import User, PasswordResetToken, EmailConfirmationToken
+from app.models import User, PasswordResetToken
 from app.utils import validate_email_format, validate_username, validate_password
 from app.mail_utils import send_email
 
@@ -17,8 +17,6 @@ class AuthService:
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
-            if not user.is_email_confirmed:
-                raise ValueError('Your email is not confirmed. Please check your mail or request a new confirmation email.')
             return user
         raise ValueError('Invalid credentials')
 
@@ -36,56 +34,11 @@ class AuthService:
         if User.query.filter((User.username == username) | (User.email == email)).first():
             raise ValueError('A user with this username or email already exists')
 
-        user = User(username=username, email=email, is_email_confirmed=False)
+        user = User(username=username, email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
-
-        self.send_confirmation_email(user)
         return user
-
-    def send_confirmation_email(self, user):
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-        
-        EmailConfirmationToken.query.filter_by(user_id=user.id).delete()
-        
-        conf_token = EmailConfirmationToken(
-            user_id=user.id,
-            token=token,
-            expires_at=expires_at
-        )
-        db.session.add(conf_token)
-        db.session.commit()
-        
-        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
-        subject = 'Confirm your SmartTo-DoList account'
-        body_text = f"Welcome! Please confirm your email by clicking the link: {confirm_url}"
-        
-        send_email(to_email=user.email, subject=subject, body_text=body_text)
-
-    def confirm_email(self, token):
-        conf_token = EmailConfirmationToken.query.filter_by(token=token, used=False).first()
-        
-        if conf_token and conf_token.expires_at > datetime.now(timezone.utc):
-            user = db.session.get(User, conf_token.user_id)
-            if user:
-                user.is_email_confirmed = True
-                user.email_confirmed_at = datetime.now(timezone.utc)
-                conf_token.used = True
-                db.session.commit()
-                return user
-        raise ValueError('The confirmation link is invalid or has expired.')
-
-    def resend_confirmation_email(self, email):
-        user = User.query.filter_by(email=email).first()
-        if user:
-            if user.is_email_confirmed:
-                raise ValueError('This email has already been confirmed.')
-            
-            self.send_confirmation_email(user)
-        else:
-            raise ValueError('User with this email not found.')
 
     def forgot_password(self, email):
         validate_email_format(email)
