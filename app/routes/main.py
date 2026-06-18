@@ -12,18 +12,19 @@ from config import Config
 logger = logging.getLogger(__name__)
 main_bp = Blueprint('main', __name__)
 
-bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN, threaded=False)
+if Config.TELEGRAM_BOT_TOKEN:
+    bot = telebot.TeleBot(Config.TELEGRAM_BOT_TOKEN, threaded=False)
 
-@main_bp.route(f"/{Config.TELEGRAM_BOT_TOKEN}", methods=['POST'])
-def telegram_webhook():
-    """Webhook for Telegram bot"""
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return '', 200
-    else:
-        return 'Forbidden', 403
+    @main_bp.route(f"/{Config.TELEGRAM_BOT_TOKEN}", methods=['POST'])
+    def telegram_webhook():
+        """Webhook for Telegram bot"""
+        if request.headers.get('content-type') == 'application/json':
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return '', 200
+        else:
+            return 'Forbidden', 403
 
 @main_bp.route('/')
 def index():
