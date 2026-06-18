@@ -1,6 +1,6 @@
 """
-Обработчики Telegram-бота: привязка аккаунта, список задач, добавление, выполнение, удаление.
-Требуется переменная окружения TELEGRAM_BOT_TOKEN.
+Telegram bot handlers: account linking, task list, add, complete, delete.
+Requires TELEGRAM_BOT_TOKEN environment variable.
 """
 from __future__ import annotations
 
@@ -25,7 +25,6 @@ _link_attempts: dict[int, list[datetime]] = {}
 MAX_LINK_ATTEMPTS = 5
 LINK_ATTEMPT_WINDOW_MINUTES = 15
 
-# Ожидание текста новой задачи после команды /add без аргументов
 _pending_add_title: dict[int, bool] = {}
 
 PAGE_SIZE = 5
@@ -65,7 +64,7 @@ def get_bot() -> telebot.TeleBot:
     if bot is None:
         token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
         if not token:
-            raise RuntimeError('Задайте TELEGRAM_BOT_TOKEN в окружении или в .env')
+            raise RuntimeError('Set TELEGRAM_BOT_TOKEN in the environment or in .env')
         bot = telebot.TeleBot(token, parse_mode='HTML')
     return bot
 
@@ -80,8 +79,8 @@ def _require_user(message) -> User | None:
         return u
     get_bot().reply_to(
         message,
-        'Аккаунт не привязан. Откройте веб-приложение → Настройки → получите код и отправьте:\n'
-        '<code>/link ВАШ_КОД</code>',
+        'Account not linked. Open the web app → Settings → get the code and send:\n'
+        '<code>/link YOUR_CODE</code>',
     )
     return None
 
@@ -107,12 +106,12 @@ def register_handlers() -> telebot.TeleBot:
         with get_app().app_context():
             text = (
                 '<b>SmartTo-DoList</b>\n\n'
-                'Команды:\n'
-                '/help — все команды\n'
-                '/link КОД — привязать аккаунт (код в веб-настройках)\n'
-                '/tasks — список задач\n'
-                '/add текст — новая задача\n'
-                '/stats — статистика\n'
+                'Commands:\n'
+                '/help — all commands\n'
+                '/link CODE — link account (code in web settings)\n'
+                '/tasks — task list\n'
+                '/add text — new task\n'
+                '/stats — statistics\n'
             )
             b.reply_to(message, text)
 
@@ -121,12 +120,12 @@ def register_handlers() -> telebot.TeleBot:
         _clear_pending(message.from_user.id)
         with get_app().app_context():
             text = (
-                '<b>Команды</b>\n'
-                '/link <code>КОД</code> — связать Telegram с аккаунтом сайта\n'
-                '/tasks — показать активные задачи (кнопки ниже сообщения)\n'
-                '/add <i>название</i> — добавить задачу (или /add и затем текст сообщением)\n'
-                '/stats — сколько задач всего и сколько выполнено\n'
-                '/unlink — отвязать этот Telegram от аккаунта\n'
+                '<b>Commands</b>\n'
+                '/link <code>CODE</code> — link Telegram with a site account\n'
+                '/tasks — show active tasks (buttons below the message)\n'
+                '/add <i>name</i> — add a task (or /add and then text in a message)\n'
+                '/stats — how many tasks in total and how many are completed\n'
+                '/unlink — unlink this Telegram from the account\n'
             )
             b.reply_to(message, text)
 
@@ -136,24 +135,24 @@ def register_handlers() -> telebot.TeleBot:
         with get_app().app_context():
             parts = (message.text or '').split(maxsplit=1)
             if len(parts) < 2:
-                b.reply_to(message, 'Использование: <code>/link КОД</code> (код из веб-настроек)')
+                b.reply_to(message, 'Usage: <code>/link CODE</code> (code from web settings)')
                 return
             code = parts[1].strip().upper()
             if not re.match(r'^[A-F0-9]{16}$', code):
-                b.reply_to(message, 'Неверный формат кода. Нужен 16 символов (буквы A-F и цифры 0-9).')
+                b.reply_to(message, 'Invalid code format. 16 characters required (letters A-F and numbers 0-9).')
                 return
 
             if _register_link_attempt(message.from_user.id) > MAX_LINK_ATTEMPTS:
                 b.reply_to(
                     message,
-                    'Слишком много попыток привязки. Повторите через 15 минут.',
+                    'Too many link attempts. Please try again in 15 minutes.',
                 )
                 return
 
             _cleanup_expired_codes()
             row = TelegramLinkCode.query.filter_by(code=code).first()
             if not row or row.expires_at < datetime.utcnow():
-                b.reply_to(message, 'Код не найден или истёк. Сгенерируйте новый в настройках сайта.')
+                b.reply_to(message, 'Code not found or expired. Generate a new one in the site settings.')
                 return
 
             tg_id = message.from_user.id
@@ -161,13 +160,13 @@ def register_handlers() -> telebot.TeleBot:
             if existing and existing.id != row.user_id:
                 b.reply_to(
                     message,
-                    'Этот Telegram уже привязан к другому аккаунту. Отвяжите его в настройках того аккаунта.',
+                    'This Telegram is already linked to another account. Unlink it in that account\'s settings.',
                 )
                 return
 
             user = User.query.get(row.user_id)
             if not user:
-                b.reply_to(message, 'Ошибка: пользователь не найден.')
+                b.reply_to(message, 'Error: user not found.')
                 return
 
             try:
@@ -179,11 +178,11 @@ def register_handlers() -> telebot.TeleBot:
                 db.session.commit()
                 
                 logger.info(f"Telegram linked for user {user.username}")
-                b.reply_to(message, f'Аккаунт <b>{html.escape(user.username)}</b> успешно привязан.')
+                b.reply_to(message, f'Account <b>{html.escape(user.username)}</b> successfully linked.')
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Error linking telegram: {e}")
-                b.reply_to(message, 'Произошла ошибка при привязке аккаунта.')
+                b.reply_to(message, 'An error occurred while linking the account.')
 
     @b.message_handler(commands=['unlink'])
     def cmd_unlink(message):
@@ -191,18 +190,18 @@ def register_handlers() -> telebot.TeleBot:
         with get_app().app_context():
             u = _user_for_telegram(message.from_user.id)
             if not u:
-                b.reply_to(message, 'Telegram не был привязан.')
+                b.reply_to(message, 'Telegram was not linked.')
                 return
             
             try:
                 u.telegram_user_id = None
                 TelegramLinkCode.query.filter_by(user_id=u.id).delete()
                 db.session.commit()
-                b.reply_to(message, 'Telegram отвязан. Вы можете привязать аккаунт снова через сайт.')
+                b.reply_to(message, 'Telegram unlinked. You can link your account again through the site.')
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Error unlinking telegram: {e}")
-                b.reply_to(message, 'Произошла ошибка при отвязке аккаунта.')
+                b.reply_to(message, 'An error occurred while unlinking the account.')
 
     @b.message_handler(commands=['stats'])
     def cmd_stats(message):
@@ -215,7 +214,7 @@ def register_handlers() -> telebot.TeleBot:
             done = Task.query.filter_by(user_id=user.id, status='completed').count()
             b.reply_to(
                 message,
-                f'Всего задач: <b>{total}</b>\nВыполнено: <b>{done}</b>\nАктивных: <b>{total - done}</b>',
+                f'Total tasks: <b>{total}</b>\nCompleted: <b>{done}</b>\nActive: <b>{total - done}</b>',
             )
 
     def _send_task_page(chat_id, user: User, page: int, message_id=None):
@@ -232,39 +231,37 @@ def register_handlers() -> telebot.TeleBot:
         chunk = tasks[start : start + PAGE_SIZE]
 
         if not chunk and page == 0:
-            body = 'Нет активных задач. Добавьте: <code>/add Название</code>'
+            body = 'No active tasks. Add one: <code>/add Name</code>'
             kb = None
         else:
-            body = '<b>Активные задачи:</b>\n\n'
+            body = '<b>Active tasks:</b>\n\n'
             kb = types.InlineKeyboardMarkup()
             for t in chunk:
                 due = ''
                 if t.due_date:
                     try:
-                        # Конвертируем в часовой пояс пользователя для отображения
                         user_tz = pytz.timezone(user.timezone or 'UTC')
                         local_due = t.due_date.astimezone(user_tz)
-                        due = f' · до {local_due.strftime("%d.%m %H:%M")}'
+                        due = f' · until {local_due.strftime("%d.%m %H:%M")}'
                     except Exception:
-                        due = f' · до {t.due_date.strftime("%d.%m %H:%M")}'
+                        due = f' · until {t.due_date.strftime("%d.%m %H:%M")}'
 
                 pr = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(t.priority or '', '⚪')
                 body += f'{pr} <b>#{t.id}</b> {html.escape(t.title or "")}{html.escape(due)}\n'
                 
-                # Добавляем кнопки для каждой задачи
                 kb.row(
-                    types.InlineKeyboardButton(f"✅ Готово", callback_data=f'd:{t.id}'),
+                    types.InlineKeyboardButton(f"✅ Done", callback_data=f'd:{t.id}'),
                     types.InlineKeyboardButton(f"✏️", callback_data=f'edit:{t.id}'),
                     types.InlineKeyboardButton(f"🗑️", callback_data=f'x:{t.id}')
                 )
             
-            body += f'\nСтр. {page + 1}/{pages}'
+            body += f'\nPage {page + 1}/{pages}'
             
             nav_row = []
             if page > 0:
-                nav_row.append(types.InlineKeyboardButton('◀️ Назад', callback_data=f'p:{page - 1}'))
+                nav_row.append(types.InlineKeyboardButton('◀️ Back', callback_data=f'p:{page - 1}'))
             if page < pages - 1:
-                nav_row.append(types.InlineKeyboardButton('Вперед ▶️', callback_data=f'p:{page + 1}'))
+                nav_row.append(types.InlineKeyboardButton('Next ▶️', callback_data=f'p:{page + 1}'))
             if nav_row:
                 kb.row(*nav_row)
 
@@ -298,13 +295,13 @@ def register_handlers() -> telebot.TeleBot:
                 _clear_pending(message.from_user.id)
             if len(parts) < 2 or not parts[1].strip():
                 _pending_add_title[message.from_user.id] = True
-                b.reply_to(message, 'Введите название задачи одним сообщением (до 200 символов):')
+                b.reply_to(message, 'Enter the task name in one message (up to 200 characters):')
                 return
             title = parts[1].strip()[:200]
             task = Task(title=title, user_id=user.id, priority='medium')
             db.session.add(task)
             db.session.commit()
-            b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
+            b.reply_to(message, f'Task added: <b>#{task.id}</b> {html.escape(title)}')
 
     @b.callback_query_handler(func=lambda c: True)
     def on_callback(call):
@@ -313,7 +310,7 @@ def register_handlers() -> telebot.TeleBot:
             user = _user_for_telegram(call.from_user.id)
             if not user:
                 try:
-                    b.answer_callback_query(call.id, 'Сначала привяжите аккаунт: /link', show_alert=True)
+                    b.answer_callback_query(call.id, 'First, link your account: /link', show_alert=True)
                 except Exception:
                     pass
                 return
@@ -321,7 +318,7 @@ def register_handlers() -> telebot.TeleBot:
             data = call.data or ''
             action, value = data.split(':', 1)
 
-            if action == 'p': # Пагинация
+            if action == 'p': # Pagination
                 page = int(value)
                 _send_task_page(call.message.chat.id, user, page, call.message.message_id)
                 b.answer_callback_query(call.id)
@@ -330,32 +327,31 @@ def register_handlers() -> telebot.TeleBot:
             task_id = int(value)
             task = Task.query.filter_by(id=task_id, user_id=user.id).first()
             if not task:
-                b.answer_callback_query(call.id, 'Задача не найдена или уже обработана.', show_alert=True)
-                # Обновляем список, чтобы убрать "мертвые" кнопки
+                b.answer_callback_query(call.id, 'Task not found or already processed.', show_alert=True)
                 _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
                 return
 
-            if action == 'd': # Выполнено
+            if action == 'd': # Done
                 task.complete()
                 db.session.commit()
-                b.answer_callback_query(call.id, f'Задача #{task.id} выполнена!')
+                b.answer_callback_query(call.id, f'Task #{task.id} completed!')
                 _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
             
-            elif action == 'x': # Удалить
+            elif action == 'x': # Delete
                 db.session.delete(task)
                 db.session.commit()
-                b.answer_callback_query(call.id, f'Задача #{task.id} удалена.')
+                b.answer_callback_query(call.id, f'Task #{task.id} deleted.')
                 _send_task_page(call.message.chat.id, user, 0, call.message.message_id)
 
-            elif action == 'edit': # Редактировать
+            elif action == 'edit': # Edit
                 b.answer_callback_query(call.id)
-                b.send_message(call.message.chat.id, f"Для редактирования задачи #{task.id} воспользуйтесь веб-интерфейсом.")
+                b.send_message(call.message.chat.id, f"To edit task #{task.id}, use the web interface.")
 
-            elif action == 'snooze': # Отложить
+            elif action == 'snooze': # Snooze
                 minutes = int(value.split(':')[1])
                 task.due_date = datetime.now(timezone.utc) + timedelta(minutes=minutes)
                 db.session.commit()
-                b.answer_callback_query(call.id, f'Задача отложена на {minutes} минут.')
+                b.answer_callback_query(call.id, f'Task snoozed for {minutes} minutes.')
                 b.delete_message(call.message.chat.id, call.message.message_id)
 
             else:
@@ -373,110 +369,12 @@ def register_handlers() -> telebot.TeleBot:
                 return
             title = (message.text or '').strip()[:200]
             if not title:
-                b.reply_to(message, 'Пустой текст — задача не создана.')
+                b.reply_to(message, 'Empty text - task not created.')
                 return
             task = Task(title=title, user_id=user.id, priority='medium')
             db.session.add(task)
             db.session.commit()
-            b.reply_to(message, f'Задача добавлена: <b>#{task.id}</b> {html.escape(title)}')
+            b.reply_to(message, f'Task added: <b>#{task.id}</b> {html.escape(title)}')
 
     _handlers_registered = True
     return b
-
-
-def generate_local_reminder_text(*, title: str, description: str | None, due_iso: str | None, priority: str | None) -> str:
-    """Генерирует текст напоминания локально."""
-    text = f"⏰ <b>Напоминание:</b> задача «{html.escape(title)}»"
-    if due_iso:
-        try:
-            dt = datetime.fromisoformat(due_iso)
-            time_str = dt.strftime("%H:%M")
-            text += f" должна быть выполнена к {time_str}"
-        except ValueError:
-            pass
-    if priority and priority in ['high', 'высокий']:
-        text += " ❗️"
-    
-    text += "!"
-    return text
-
-def _start_reminder_loop(poll_seconds: int = 60):
-    """
-    Фоновый цикл автосообщений для due_date.
-    Запускать один раз при старте бота.
-    """
-    import threading
-    import time
-    import pytz
-
-    def loop():
-        from app.models import ReminderLog
-
-        window_minutes = int(os.environ.get("REMIND_WINDOW_MINUTES", "30").strip() or "30")
-        reminder_type = "due_soon"
-        dedup_minutes = int(os.environ.get("REMIND_DEDUP_MINUTES", "1440").strip() or "1440")
-
-        while True:
-            now_utc = datetime.now(timezone.utc)
-            cutoff = now_utc + timedelta(minutes=window_minutes)
-
-            try:
-                with get_app().app_context():
-                    tasks = Task.query.filter(Task.status != 'completed').filter(Task.due_date.isnot(None)).filter(Task.due_date <= cutoff).all()
-
-                    for task in tasks:
-                        user = task.owner
-                        if not user or not user.telegram_user_id:
-                            continue
-
-                        existing = ReminderLog.query.filter_by(task_id=task.id, reminder_type=reminder_type, user_id=user.id).order_by(ReminderLog.reminded_at.desc()).first()
-                        if existing and (datetime.utcnow() - existing.reminded_at).total_seconds() < dedup_minutes * 60:
-                            continue
-
-                        try:
-                            user_tz = pytz.timezone(user.timezone or 'UTC')
-                            local_due = task.due_date.astimezone(user_tz)
-                            due_str = local_due.strftime("%H:%M")
-                            reminder_text = f"⏰ Напоминание: задача «<b>{html.escape(task.title)}</b>» должна быть выполнена к {due_str}!"
-                            
-                            kb = types.InlineKeyboardMarkup()
-                            kb.row(
-                                types.InlineKeyboardButton("✅ Выполнено", callback_data=f"d:{task.id}"),
-                                types.InlineKeyboardButton("⏰ Отложить на час", callback_data=f"snooze:{task.id}:60")
-                            )
-                            
-                            get_bot().send_message(int(user.telegram_user_id), reminder_text, reply_markup=kb)
-                            
-                            new_log = ReminderLog(task_id=task.id, user_id=user.id, reminder_type=reminder_type, payload=reminder_text)
-                            db.session.add(new_log)
-                            db.session.commit()
-                            
-                        except Exception as e:
-                            logger.warning("Telegram send failed for user_id=%s task_id=%s: %s", user.id, task.id, e)
-                            db.session.rollback()
-
-            except Exception as e:
-                logger.exception("Reminder loop error: %s", str(e))
-
-            time.sleep(poll_seconds)
-
-    thread = threading.Thread(target=loop, daemon=True, name="reminder-loop")
-    thread.start()
-    return thread
-
-
-def run_polling():
-    logging.basicConfig(level=logging.INFO)
-    try:
-        from dotenv import load_dotenv
-        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        load_dotenv(os.path.join(root, '.env'))
-    except ImportError:
-        pass
-    b = register_handlers()
-
-    # Запускаем цикл напоминаний
-    _start_reminder_loop()
-
-    logger.info('Бот запущен (long polling). Остановка: Ctrl+C')
-    b.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)

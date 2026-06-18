@@ -32,12 +32,8 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(256), nullable=False)
     
-    is_email_confirmed = db.Column(db.Boolean, nullable=False, default=True)
-    email_confirmed_at = db.Column(db.DateTime, nullable=True)
-
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=_utcnow, onupdate=_utcnow)
 
@@ -57,7 +53,7 @@ class User(db.Model):
 
     def avatar(self, size: int) -> str:
         """Generates a user avatar URL using Gravatar."""
-        digest = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+        digest = hashlib.md5(self.username.lower().encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
 
@@ -107,29 +103,6 @@ class TelegramLinkCode(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     user = db.relationship('User', backref=db.backref('telegram_link_codes', lazy=True))
-
-
-class PasswordResetToken(db.Model):
-    """One-time token for password reset."""
-    __tablename__ = 'password_reset_tokens'
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, nullable=False, default=False)
-    user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy=True))
-
-
-class EmailChangeRequest(db.Model):
-    """Request to confirm an email change."""
-    __tablename__ = 'email_change_requests'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    new_email = db.Column(db.String(120), nullable=False)
-    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, nullable=False, default=False)
-    user = db.relationship('User', backref=db.backref('email_change_requests', lazy=True))
 
 
 class ReminderLog(db.Model):

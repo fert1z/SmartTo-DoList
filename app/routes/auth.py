@@ -3,7 +3,6 @@ Authentication routes
 """
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from app.limiter import limiter
 from app.services.auth_service import auth_service
 
 logger = logging.getLogger(__name__)
@@ -41,11 +40,10 @@ def register():
     if request.method == 'POST':
         try:
             username = request.form.get('username', '').strip()
-            email = request.form.get('email', '').strip().lower()
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm_password', '')
             
-            auth_service.register_user(username, email, password, confirm_password)
+            auth_service.register_user(username, password, confirm_password)
             
             logger.info(f"New user registered: {username}")
             flash('You have successfully registered! You can now log in.', 'success')
@@ -68,40 +66,3 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('main.index'))
-
-
-@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
-@limiter.limit('5 per hour')
-def forgot_password():
-    """Forgot password"""
-    if request.method == 'POST':
-        try:
-            email = request.form.get('email', '').strip().lower()
-            auth_service.forgot_password(email)
-            flash('If this email is registered, a password reset link will be sent.', 'info')
-        except ValueError as e:
-            flash(str(e), 'error')
-        except Exception as e:
-            logger.error(f"Forgot password error: {str(e)}")
-            flash('An error occurred', 'error')
-        return redirect(url_for('auth.login'))
-
-    return render_template('forgot_password.html')
-
-
-@auth_bp.route('/reset-password', methods=['GET', 'POST'])
-def reset_password():
-    """Reset password with a one-time token."""
-    token = request.args.get('token') if request.method == 'GET' else request.form.get('token')
-    if request.method == 'POST':
-        try:
-            password = request.form.get('password', '')
-            confirm_password = request.form.get('confirm_password', '')
-            auth_service.reset_password(token, password, confirm_password)
-            flash('Your password has been successfully reset. Please log in with your new password.', 'success')
-            return redirect(url_for('auth.login'))
-        except ValueError as e:
-            flash(str(e), 'error')
-            return render_template('reset_password.html', token=token), 400
-
-    return render_template('reset_password.html', token=token)
