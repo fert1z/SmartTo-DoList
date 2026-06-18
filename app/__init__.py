@@ -26,7 +26,7 @@ def create_app(config_name=None, scheduler_enabled=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG') or os.getenv('FLASK_ENV') or 'production'
     
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static')
     
     # Загружаем конфигурацию
     app.config.from_object(config.get(config_name, config['default']))
