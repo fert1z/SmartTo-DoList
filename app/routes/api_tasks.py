@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timezone
+import enum
 
 from flask import Blueprint, jsonify, request, session
 import pytz
@@ -32,8 +33,8 @@ def _task_to_json(task: Task, user_timezone: str = 'UTC') -> dict:
         'id': task.id,
         'title': task.title,
         'description': task.description,
-        'priority': task.priority.value,
-        'status': task.status.value,
+        'priority': task.priority.value if isinstance(task.priority, enum.Enum) else task.priority,
+        'status': task.status.value if isinstance(task.status, enum.Enum) else task.status,
         'due_date': due_date_iso,
         'category': task.category,
     }
