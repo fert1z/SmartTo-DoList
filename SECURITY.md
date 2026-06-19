@@ -1,103 +1,104 @@
-# 🔐 SmartTo-DoList Security
+# 🔐 Безопасность SmartTo-DoList
 
-## Recent Security Enhancements
+## Последние улучшения безопасности
 
-### 🔒 Password Hashing
-- All passwords are now hashed using `werkzeug.security.generate_password_hash`
-- Uses the PBKDF2 algorithm with a salt by default
+### 🔒 Хеширование паролей
+- Все пароли теперь хешируются с использованием `werkzeug.security.generate_password_hash`
+- Используется алгоритм PBKDF2 с солью по умолчанию
 
-### 🛡️ CSRF Protection
-- Flask-WTF CSRF protection is enabled
-- All forms must include a CSRF token
-- Configured at the application level
+### 🛡️ CSRF защита
+- Включена Flask-WTF CSRF защита
+- Все формы должны содержать CSRF токен
+- Настроено на уровне приложения
 
-### 📧 Input Validation
-- **Username**: Only letters, numbers, and underscores (3-20 characters)
-- **Password**: Minimum 8 characters, maximum 128 characters
+### 📧 Валидация входных данных
+- **Email**: Валидация формата с помощью `email-validator`
+- **Username**: Только буквы, цифры, подчеркивание (3-20 символов)
+- **Пароль**: Минимум 8 символов, максимум 128 символов
 
-### 🔑 Telegram Tokens
-- Token length increased from 8 to 16 characters (2^64 combinations)
-- Format: 16 characters A-F0-9 (hexadecimal)
-- TTL: 15 minutes
+### 🔑 Токены Telegram
+- Увеличена длина токена с 8 до 16 символов (2^64 комбинаций)
+- Формат: 16 символов A-F0-9 (шестнадцатеричная система)
+- TTL: 15 минут
 
-### 🎯 Authentication
-- `@require_login` decorator to protect routes
-- Session marked as permanent (`session.permanent = True`)
-- `user_id` checked on every request to protected routes
+### 🎯 Аутентификация
+- Декоратор `@require_login` для защиты маршрутов
+- Сессия помечена как постоянная (`session.permanent = True`)
+- Проверка user_id при каждом запросе к защищенным маршрутам
 
-### 📝 Exception Handling
-- Try-except blocks in all critical operations
-- Transaction rollback (`db.session.rollback()`) on errors
-- Logging of all errors
+### 📝 Обработка исключений
+- Try-except блоки во всех критических операциях
+- Откат транзакций (`db.session.rollback()`) при ошибках
+- Логирование всех ошибок
 
-### 📊 Logging
-- File-based logging with rotation (10 MB)
-- Separate logs for errors (`error.log`)
-- Logging of all authentication and critical events
+### 📊 Логирование
+- Файловое логирование с ротацией (10 MB)
+- Отдельные логи для ошибок (`error.log`)
+- Логирование всех операций аутентификации и критических событий
 
-## 🔧 How to Use
+## 🔧 Как использовать
 
-### Install Dependencies
+### Установка зависимостей
 ```bash
 pip install -r requirements.txt
 ```
 
-### Configure Environment
+### Конфигурация окружения
 ```bash
-# Copy and edit .env.example
+# Скопируйте и отредактируйте .env.example
 cp .env.example .env
 
-# Set a strong SECRET_KEY
+# Установите сильный SECRET_KEY
 export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
 ```
 
-### Run Tests
+### Запуск тестов
 ```bash
 pytest tests/
 pytest tests/ --cov=app --cov-report=html
 ```
 
-## 🚨 Production Recommendations
+## 🚨 Рекомендации для продакшена
 
-1. **SECRET_KEY**: Use a strong, random key
+1. **SECRET_KEY**: Используйте сильный случайный ключ
 ```python
 import secrets
 SECRET_KEY = secrets.token_hex(32)
 ```
 
-2. **HTTPS**: Always use HTTPS in production
+2. **HTTPS**: Всегда используйте HTTPS в продакшене
 ```python
-SESSION_COOKIE_SECURE = True  # Send cookies only over HTTPS
+SESSION_COOKIE_SECURE = True  # Отправлять куки только по HTTPS
 ```
 
-3. **Database**: Use PostgreSQL instead of SQLite
+3. **Database**: Используйте PostgreSQL вместо SQLite
 ```
 DATABASE_URL=postgresql://user:password@localhost/smarttodo
 ```
 
-4. **TELEGRAM_BOT_TOKEN**: Do not commit tokens, use .env
+4. **TELEGRAM_BOT_TOKEN**: Не коммитьте токены, используйте .env
 
-5. **Logging**: Regularly check logs for security errors
+5. **Логирование**: Регулярно проверяйте логи на ошибки безопасности
 
-## 📋 Deployment Checklist
+## 📋 Чек-лист для развертывания
 
-- [ ] Strong `SECRET_KEY` is set
-- [ ] HTTPS is enabled
+- [ ] Установлен сильный `SECRET_KEY`
+- [ ] Включен HTTPS
 - [ ] `DEBUG = False`
-- [ ] Using a production-level database (like PostgreSQL)
-- [ ] Database backups are configured
-- [ ] Logging is enabled
-- [ ] Tests are passing (`pytest tests/`)
-- [ ] Dependency security checked (`pip audit`)
+- [ ] Используется PostgreSQL (или другая БД уровня production)
+- [ ] Настроены резервные копии БД
+- [ ] Включено логирование
+- [ ] Запущены тесты (`pytest tests/`)
+- [ ] Проверена безопасность зависимостей (`pip audit`)
 
-## 🐛 Reporting Vulnerabilities
+## 🐛 报告об уязвимостях
 
-If you discover a vulnerability:
-1. **Do not create a public Issue**
-2. Contact the team via email
-3. Describe the vulnerability and steps to reproduce
+Если вы обнаружили уязвимость:
+1. **Не создавайте публичный Issue**
+2. Свяжитесь с командой через почту
+3. Опишите уязвимость и шаги для воспроизведения
 
-## 📚 References
+## 📚 Ссылки
 
 - [OWASP Top 10](https://owasp.org/Top10/)
 - [Flask Security](https://flask.palletsprojects.com/security/)
