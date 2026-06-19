@@ -91,7 +91,7 @@ DATABASE_URL=postgresql://user:password@localhost/smarttodo
 - [ ] Запущены тесты (`pytest tests/`)
 - [ ] Проверена безопасность зависимостей (`pip audit`)
 
-## 🐛 报告об уязвимостях
+## 🐛 Об уязвимостях
 
 Если вы обнаружили уязвимость:
 1. **Не создавайте публичный Issue**
