@@ -31,10 +31,10 @@ def profile():
             session.clear()
             return redirect(url_for('auth.login'))
 
-        completed = Task.query.filter_by(user_id=user_id, status='completed').count()
+        completed = Task.query.filter_by(user_id=user_id, status='COMPLETED').count()
         active = (
             Task.query.filter_by(user_id=user_id)
-            .filter(Task.status != 'completed')
+            .filter(Task.status != 'COMPLETED')
             .count()
         )
 
@@ -189,5 +189,5 @@ def edit_profile():
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error editing profile: {str(e)}")
+        logger.error(f"Error editing profile: {e}", exc_info=True)
         return jsonify({'error': 'An internal error occurred while saving'}), 500
