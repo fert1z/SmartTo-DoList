@@ -72,11 +72,11 @@ function applyFilterAndSearch(queryLower) {
     let list = allTasks.slice();
     if (currentFilter === 'active') {
         list = list.filter(function (t) {
-            return t.status !== 'completed';
+            return t.status !== 'COMPLETED';
         });
     } else if (currentFilter === 'done') {
         list = list.filter(function (t) {
-            return t.status === 'completed';
+            return t.status === 'COMPLETED';
         });
     }
     if (queryLower) {
@@ -120,7 +120,7 @@ function renderTasks(tasks) {
     tasks.forEach(function (task) {
         const card = document.createElement('article');
         card.className = 'task-card';
-        if (task.status === 'completed') {
+        if (task.status === 'COMPLETED') {
             card.classList.add('task-card--completed');
         }
 
@@ -161,7 +161,7 @@ function renderTasks(tasks) {
         const actionsEl = document.createElement('div');
         actionsEl.className = 'task-actions';
 
-        if (task.status === 'completed') {
+        if (task.status === 'COMPLETED') {
             const doneLabel = document.createElement('span');
             doneLabel.className = 'task-done-label';
             doneLabel.textContent = 'Выполнено';
@@ -268,11 +268,11 @@ function deleteTask(taskId) {
 
 function getPriorityColor(priority) {
     switch (priority) {
-        case 'high':
+        case 'HIGH':
             return '#e53935';
-        case 'medium':
+        case 'MEDIUM':
             return '#fb8c00';
-        case 'low':
+        case 'LOW':
             return '#43a047';
         default:
             return '#78909c';
@@ -281,11 +281,11 @@ function getPriorityColor(priority) {
 
 function getPriorityLabel(priority) {
     switch (priority) {
-        case 'high':
+        case 'HIGH':
             return 'Высокий';
-        case 'medium':
+        case 'MEDIUM':
             return 'Средний';
-        case 'low':
+        case 'LOW':
             return 'Низкий';
         default:
             return '—';
