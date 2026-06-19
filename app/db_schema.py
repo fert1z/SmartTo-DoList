@@ -17,7 +17,6 @@ def apply_schema_migrations(db):
             col_type = 'BIGINT' if dialect != 'sqlite' else 'INTEGER'
             with bind.begin() as conn:
                 conn.execute(text(f'ALTER TABLE users ADD COLUMN telegram_user_id {col_type}'))
-            # Уникальность для старых БД без этой колонки (новые создаются из модели)
             with bind.begin() as conn:
                 conn.execute(
                     text(
@@ -28,8 +27,6 @@ def apply_schema_migrations(db):
                 
         if 'is_email_confirmed' not in cols:
             col_type = 'BOOLEAN' if dialect != 'sqlite' else 'INTEGER'
-            default_val = 'FALSE' if dialect != 'sqlite' else '0'
-            # Для существующих пользователей ставим TRUE, чтобы не заблокировать их
             with bind.begin() as conn:
                 conn.execute(text(f'ALTER TABLE users ADD COLUMN is_email_confirmed {col_type} NOT NULL DEFAULT TRUE'))
                 
@@ -38,14 +35,18 @@ def apply_schema_migrations(db):
             with bind.begin() as conn:
                 conn.execute(text(f'ALTER TABLE users ADD COLUMN email_confirmed_at {col_type}'))
         
-        # Расширяем столбец пароля для поддержки длинных хешей scrypt (только для Postgres)
         if dialect == 'postgresql':
             with bind.begin() as conn:
                 conn.execute(text('ALTER TABLE users ALTER COLUMN password TYPE VARCHAR(256)'))
 
-    # reminder_logs (если таблица отсутствует — пусть create_all её создаст,
-    # но если по какой-то причине её не создало, добавим минимальную структуру).
+    # tasks - исправляем старые значения в нижнем регистре на верхний
+    if 'tasks' in tables:
+        if dialect == 'postgresql':
+            with bind.begin() as conn:
+                # Обновляем значения перед изменением типа столбца, если это необходимо
+                conn.execute(text("UPDATE tasks SET priority = UPPER(priority) WHERE priority IN ('low', 'medium', 'high')"))
+                conn.execute(text("UPDATE tasks SET status = UPPER(status) WHERE status IN ('pending', 'in_progress', 'completed')"))
+    
+    # reminder_logs
     if 'reminder_logs' not in tables:
-        # Для простоты создадим таблицу через SQLAlchemy metadata.
-        # create_all обычно всё равно её делает, но этот блок защищает старые схемы.
         return
