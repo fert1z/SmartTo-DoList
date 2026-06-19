@@ -9,9 +9,11 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta, timezone
+import pytz
 
 import telebot
 from telebot import types
+from sqlalchemy.orm import joinedload
 
 from app import create_app, db
 from app.models import Task, TelegramLinkCode, User
@@ -211,7 +213,7 @@ def register_handlers() -> telebot.TeleBot:
             if not user:
                 return
             total = Task.query.filter_by(user_id=user.id).count()
-            done = Task.query.filter_by(user_id=user.id, status='completed').count()
+            done = Task.query.filter_by(user_id=user.id, status='COMPLETED').count()
             b.reply_to(
                 message,
                 f'Total tasks: <b>{total}</b>\nCompleted: <b>{done}</b>\nActive: <b>{total - done}</b>',
@@ -220,7 +222,7 @@ def register_handlers() -> telebot.TeleBot:
     def _send_task_page(chat_id, user: User, page: int, message_id=None):
         q = (
             Task.query.filter_by(user_id=user.id)
-            .filter(Task.status != 'completed')
+            .filter(Task.status != 'COMPLETED')
             .order_by(Task.created_at.desc())
         )
         tasks = q.all()
@@ -246,7 +248,7 @@ def register_handlers() -> telebot.TeleBot:
                     except Exception:
                         due = f' · until {t.due_date.strftime("%d.%m %H:%M")}'
 
-                pr = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(t.priority or '', '⚪')
+                pr = {'HIGH': '🔴', 'MEDIUM': '🟡', 'LOW': '🟢'}.get(t.priority.value, '⚪')
                 body += f'{pr} <b>#{t.id}</b> {html.escape(t.title or "")}{html.escape(due)}\n'
                 
                 kb.row(
@@ -298,7 +300,7 @@ def register_handlers() -> telebot.TeleBot:
                 b.reply_to(message, 'Enter the task name in one message (up to 200 characters):')
                 return
             title = parts[1].strip()[:200]
-            task = Task(title=title, user_id=user.id, priority='medium')
+            task = Task(title=title, user_id=user.id)
             db.session.add(task)
             db.session.commit()
             b.reply_to(message, f'Task added: <b>#{task.id}</b> {html.escape(title)}')
@@ -316,7 +318,9 @@ def register_handlers() -> telebot.TeleBot:
                 return
             
             data = call.data or ''
-            action, value = data.split(':', 1)
+            parts = data.split(':', 2)
+            action = parts[0]
+            value = parts[1] if len(parts) > 1 else None
 
             if action == 'p': # Pagination
                 page = int(value)
@@ -348,7 +352,7 @@ def register_handlers() -> telebot.TeleBot:
                 b.send_message(call.message.chat.id, f"To edit task #{task.id}, use the web interface.")
 
             elif action == 'snooze': # Snooze
-                minutes = int(value.split(':')[1])
+                minutes = int(parts[2]) if len(parts) > 2 else 60
                 task.due_date = datetime.now(timezone.utc) + timedelta(minutes=minutes)
                 db.session.commit()
                 b.answer_callback_query(call.id, f'Task snoozed for {minutes} minutes.')
@@ -371,10 +375,90 @@ def register_handlers() -> telebot.TeleBot:
             if not title:
                 b.reply_to(message, 'Empty text - task not created.')
                 return
-            task = Task(title=title, user_id=user.id, priority='medium')
+            task = Task(title=title, user_id=user.id)
             db.session.add(task)
             db.session.commit()
             b.reply_to(message, f'Task added: <b>#{task.id}</b> {html.escape(title)}')
 
     _handlers_registered = True
     return b
+
+
+def _start_reminder_loop(poll_seconds: int = 60):
+    """
+    Фоновый цикл автосообщений для due_date.
+    Запускать один раз при старте бота.
+    """
+    import threading
+    import time
+
+    def loop():
+        from app.models import ReminderLog
+
+        window_minutes = int(os.environ.get("REMIND_WINDOW_MINUTES", "30").strip() or "30")
+        reminder_type = "due_soon"
+        dedup_minutes = int(os.environ.get("REMIND_DEDUP_MINUTES", "1440").strip() or "1440")
+
+        while True:
+            now_utc = datetime.now(timezone.utc)
+            cutoff = now_utc + timedelta(minutes=window_minutes)
+
+            try:
+                with get_app().app_context():
+                    tasks = Task.query.options(joinedload(Task.owner)).filter(Task.status != 'COMPLETED').filter(Task.due_date.isnot(None)).filter(Task.due_date <= cutoff).all()
+
+                    for task in tasks:
+                        user = task.owner
+                        if not user or not user.telegram_user_id:
+                            continue
+
+                        existing = ReminderLog.query.filter_by(task_id=task.id, reminder_type=reminder_type, user_id=user.id).order_by(ReminderLog.reminded_at.desc()).first()
+                        if existing and (datetime.utcnow() - existing.reminded_at).total_seconds() < dedup_minutes * 60:
+                            continue
+
+                        try:
+                            user_tz = pytz.timezone(user.timezone or 'UTC')
+                            local_due = task.due_date.astimezone(user_tz)
+                            due_str = local_due.strftime("%H:%M")
+                            reminder_text = f"⏰ Напоминание: задача «<b>{html.escape(task.title)}</b>» должна быть выполнена к {due_str}!"
+                            
+                            kb = types.InlineKeyboardMarkup()
+                            kb.row(
+                                types.InlineKeyboardButton("✅ Выполнено", callback_data=f"d:{task.id}"),
+                                types.InlineKeyboardButton("⏰ Отложить на час", callback_data=f"snooze:{task.id}:60")
+                            )
+                            
+                            get_bot().send_message(int(user.telegram_user_id), reminder_text, reply_markup=kb)
+                            
+                            new_log = ReminderLog(task_id=task.id, user_id=user.id, reminder_type=reminder_type, payload=reminder_text)
+                            db.session.add(new_log)
+                            db.session.commit()
+                            
+                        except Exception as e:
+                            logger.warning("Telegram send failed for user_id=%s task_id=%s: %s", user.id, task.id, e)
+                            db.session.rollback()
+
+            except Exception as e:
+                logger.exception("Reminder loop error: %s", str(e))
+
+            time.sleep(poll_seconds)
+
+    thread = threading.Thread(target=loop, daemon=True, name="reminder-loop")
+    thread.start()
+    return thread
+
+
+def run_polling():
+    logging.basicConfig(level=logging.INFO)
+    try:
+        from dotenv import load_dotenv
+        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        load_dotenv(os.path.join(root, '.env'))
+    except ImportError:
+        pass
+    b = register_handlers()
+
+    _start_reminder_loop()
+
+    logger.info('Bot started (long polling). Stop: Ctrl+C')
+    b.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
