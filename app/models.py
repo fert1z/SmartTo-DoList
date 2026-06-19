@@ -79,6 +79,9 @@ class Task(db.Model):
     version = db.Column(db.Integer, default=1)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+    # Каскадное удаление логов при удалении задачи
+    reminder_logs = db.relationship('ReminderLog', backref='task', lazy=True, cascade='all, delete-orphan')
+
     def __repr__(self) -> str:
         return f'<Task {self.title}>'
 
