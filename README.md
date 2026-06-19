@@ -1,121 +1,121 @@
 # SmartTo-DoList
 
-**SmartTo-DoList** — это современное и легкое веб-приложение для управления задачами, созданное на Flask. Оно тесно интегрировано с Telegram-ботом для удобного получения напоминаний и управления задачами на ходу.
+**SmartTo-DoList** is a modern and lightweight web application for task management, built with Flask. It is tightly integrated with a Telegram bot for convenient reminders and on-the-go task management.
 
-## 🚀 Ключевые возможности
+## 🚀 Key Features
 
-- **Полное управление задачами**: Создание, редактирование, удаление, фильтрация и поиск.
-- **Приоритеты и категории**: Организуйте свои задачи для лучшей фокусировки.
-- **Умный ввод времени**: Используйте естественный язык для установки сроков (например, "завтра в 10", "через 2 часа").
-- **Интеграция с Telegram**: Получайте напоминания и управляйте задачами прямо из мессенджера.
-- **Адаптивный дизайн**: Удобно пользоваться как с компьютера, так и с телефона.
-- **Светлая и тёмная темы**: Настройте внешний вид под себя.
-- **Поддержка часовых поясов**: Установите свой часовой пояс в настройках для корректной работы напоминаний.
+- **Full Task Management**: Create, edit, delete, filter, and search for tasks.
+- **Priorities and Categories**: Organize your tasks for better focus.
+- **Smart Time Input**: Use natural language to set deadlines (e.g., "tomorrow at 10", "in 2 hours").
+- **Telegram Integration**: Receive reminders and manage tasks directly from the messenger.
+- **Responsive Design**: User-friendly on both desktop and mobile devices.
+- **Light and Dark Themes**: Customize the appearance to your liking.
+- **Timezone Support**: Set your timezone in the settings for correct reminder functionality.
 
-## 🛠️ Технологический стек
+## 🛠️ Tech Stack
 
-- **Бэкенд**: Flask, SQLAlchemy, Gunicorn
-- **База данных**: PostgreSQL (рекомендуется), SQLite (для разработки)
-- **Фронтенд**: HTML, CSS, чистый JavaScript (без фреймворков)
-- **Бот**: pyTelegramBotAPI
+- **Backend**: Flask, SQLAlchemy, Gunicorn
+- **Database**: PostgreSQL (recommended), SQLite (for development)
+- **Frontend**: HTML, CSS, plain JavaScript (no frameworks)
+- **Bot**: pyTelegramBotAPI
 
-## ⚙️ Быстрый старт (локальная разработка)
+## ⚙️ Quick Start (Local Development)
 
-1.  **Клонируйте репозиторий:**
+1.  **Clone the repository:**
     ```bash
     git clone https://github.com/fert1z/SmartTo-DoList.git
     cd SmartTo-DoList
     ```
 
-2.  **Создайте и активируйте виртуальное окружение:**
+2.  **Create and activate a virtual environment:**
     ```bash
     python -m venv .venv
     source .venv/bin/activate  # macOS / Linux
     # .venv\Scripts\activate  # Windows
     ```
 
-3.  **Установите зависимости:**
+3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Настройте переменные окружения:**
-    Скопируйте файл с примером и отредактируйте его:
+4.  **Configure environment variables:**
+    Copy the example file and edit it:
     ```bash
     cp .env.example .env
     ```
-    - Задайте `SECRET_KEY` (можно сгенерировать любой случайной строкой).
-    - Для запуска Telegram-бота локально добавьте `TELEGRAM_BOT_TOKEN`.
+    - Set a `SECRET_KEY` (can be any random string).
+    - To run the Telegram bot locally, add `TELEGRAM_BOT_TOKEN`.
 
-5.  **Инициализируйте базу данных:**
+5.  **Initialize the database:**
     ```bash
     export FLASK_APP=wsgi.py
     flask init-database
     ```
 
-6.  **Запустите веб-сервер и бота:**
-    Скрипт `start.sh` автоматически запустит и сайт, и Telegram-бота (если указан токен).
+6.  **Run the web server and bot:**
+    The `start.sh` script will automatically run both the website and the Telegram bot (if a token is provided).
     ```bash
     chmod +x start.sh
     ./start.sh
     ```
-    Приложение будет доступно по адресу `http://127.0.0.1:10000`.
+    The application will be available at `http://127.0.0.1:10000`.
 
-## ☁️ Развертывание на Render (Рекомендуемый способ)
+## ☁️ Deployment on Render (Recommended Method)
 
-Этот проект идеально подходит для бесплатного тарифа Render. Мы развернем его как 3 независимых сервиса, подключенных к одной группе переменных.
+This project is ideal for Render's free tier. We will deploy it as 3 independent services connected to a single environment group.
 
-### Шаг 1: Создание группы переменных
+### Step 1: Create an Environment Group
 
-1.  В панели Render перейдите в **Environment Groups** и нажмите **New Environment Group**.
-2.  Назовите ее (например, `smart-todolist-env`).
-3.  Добавьте следующие переменные:
-    - `DATABASE_URL`: Появится после создания базы данных (см. Шаг 2).
-    - `SECRET_KEY`: Ваша уникальная секретная строка.
-    - `TELEGRAM_BOT_TOKEN`: Токен вашего Telegram-бота.
-    - `PYTHON_VERSION`: `3.11` (или любая другая поддерживаемая версия).
+1.  In the Render dashboard, go to **Environment Groups** and click **New Environment Group**.
+2.  Name it (e.g., `smart-todolist-env`).
+3.  Add the following variables:
+    - `DATABASE_URL`: Will be available after creating the database (see Step 2).
+    - `SECRET_KEY`: Your unique secret string.
+    - `TELEGRAM_BOT_TOKEN`: Your Telegram bot's token.
+    - `PYTHON_VERSION`: `3.11` (or any other supported version).
 
-### Шаг 2: Создание базы данных
+### Step 2: Create a Database
 
-1.  В панели Render нажмите **New +** → **PostgreSQL**.
-2.  Придумайте имя и выберите бесплатный тариф (Free).
-3.  После создания базы перейдите в ее настройки, скопируйте **Internal Database URL** и вставьте его в качестве значения для `DATABASE_URL` в вашей группе переменных.
+1.  In the Render dashboard, click **New +** → **PostgreSQL**.
+2.  Choose a name and select the free tier.
+3.  After the database is created, go to its settings, copy the **Internal Database URL**, and paste it as the value for `DATABASE_URL` in your environment group.
 
-### Шаг 3: Развертывание Веб-сервиса
+### Step 3: Deploy the Web Service
 
-1.  Нажмите **New +** → **Web Service**.
-2.  Подключите ваш GitHub-репозиторий.
-3.  Настройте сервис:
-    - **Name**: `smart-todolist-web` (или любое другое имя).
-    - **Environment**: Выберите вашу группу `smart-todolist-env`.
+1.  Click **New +** → **Web Service**.
+2.  Connect your GitHub repository.
+3.  Configure the service:
+    - **Name**: `smart-todolist-web` (or any other name).
+    - **Environment**: Select your `smart-todolist-env` group.
     - **Build Command**: `pip install -r requirements.txt`
     - **Start Command**: `gunicorn wsgi:app`
-4.  Нажмите **Create Web Service**.
+4.  Click **Create Web Service**.
 
-### Шаг 4: Развертывание Telegram-бота
+### Step 4: Deploy the Telegram Bot
 
-1.  Нажмите **New +** → **Background Worker**.
-2.  Подключите тот же самый GitHub-репозиторий.
-3.  Настройте воркер:
+1.  Click **New +** → **Background Worker**.
+2.  Connect the same GitHub repository.
+3.  Configure the worker:
     - **Name**: `smart-todolist-bot`.
-    - **Environment**: Выберите вашу группу `smart-todolist-env`.
+    - **Environment**: Select your `smart-todolist-env` group.
     - **Build Command**: `pip install -r requirements.txt`
     - **Start Command**: `python -m tg_bot.run`
-4.  Нажмите **Create Background Worker**.
+4.  Click **Create Background Worker**.
 
-### Шаг 5: Инициализация базы данных
+### Step 5: Initialize the Database
 
-1.  Дождитесь, пока **Web Service** перейдет в статус `Live`.
-2.  Перейдите в его вкладку **Shell**.
-3.  Выполните команду: `flask init-database`
+1.  Wait for the **Web Service** to have a `Live` status.
+2.  Go to its **Shell** tab.
+3.  Execute the command: `flask init-database`
 
-После этого ваш сайт и бот будут работать независимо и стабильно, используя одну общую базу данных.
+After this, your website and bot will run independently and stably, using a single shared database.
 
-## 🗂 Структура проекта
+## 🗂 Project Structure
 
-- `app/`: Основной код Flask-приложения (маршруты, модели, шаблоны).
-- `tg_bot/`: Логика Telegram-бота.
-- `start.sh`: Скрипт для **локального** запуска сайта и бота.
-- `wsgi.py`: Точка входа для Gunicorn.
-- `requirements.txt`: Список зависимостей.
-- `tests/`: Автоматические тесты.
+- `app/`: Main Flask application code (routes, models, templates).
+- `tg_bot/`: Telegram bot logic.
+- `start.sh`: Script for **local** startup of the site and bot.
+- `wsgi.py`: WSGI entry point for Gunicorn.
+- `requirements.txt`: List of dependencies.
+- `tests/`: Automatic tests.
