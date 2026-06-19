@@ -14,16 +14,16 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class TaskStatus(enum.Enum):
-    PENDING = 'pending'
-    IN_PROGRESS = 'in_progress'
-    COMPLETED = 'completed'
+class TaskStatus(str, enum.Enum):
+    PENDING = 'PENDING'
+    IN_PROGRESS = 'IN_PROGRESS'
+    COMPLETED = 'COMPLETED'
 
 
-class TaskPriority(enum.Enum):
-    LOW = 'low'
-    MEDIUM = 'medium'
-    HIGH = 'high'
+class TaskPriority(str, enum.Enum):
+    LOW = 'LOW'
+    MEDIUM = 'MEDIUM'
+    HIGH = 'HIGH'
 
 
 class User(db.Model):
@@ -68,8 +68,8 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False, index=True)
     description = db.Column(db.Text)
-    priority = db.Column(db.Enum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False)
-    status = db.Column(db.Enum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
+    priority = db.Column(db.Enum(TaskPriority, name='taskpriority', create_type=False), default=TaskPriority.MEDIUM, nullable=False)
+    status = db.Column(db.Enum(TaskStatus, name='taskstatus', create_type=False), default=TaskStatus.PENDING, nullable=False)
     due_date = db.Column(db.DateTime)
     category = db.Column(db.String(50), default='personal')
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)

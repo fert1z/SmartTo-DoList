@@ -20,8 +20,8 @@ def create_task(user_id: int, data: dict) -> Task:
     if len(title) > 200:
         raise ValueError("Task title is too long")
 
-    priority_str = str(data.get('priority', 'medium')).strip().lower()
-    priority = TaskPriority(priority_str) if priority_str in [p.value for p in TaskPriority] else TaskPriority.MEDIUM
+    priority_str = str(data.get('priority', 'medium')).strip().upper()
+    priority = TaskPriority(priority_str) if priority_str in TaskPriority._value2member_map_ else TaskPriority.MEDIUM
     
     category = str(data.get('category', 'personal')).strip().lower()
     if category not in ['personal', 'work', 'shopping', 'health', 'other', 'study']:
@@ -64,13 +64,13 @@ def update_task(task: Task, data: dict) -> Task:
         task.description = str(data.get('description', ''))
 
     if 'priority' in data:
-        priority_str = str(data.get('priority', '')).strip().lower()
-        if priority_str in [p.value for p in TaskPriority]:
+        priority_str = str(data.get('priority', '')).strip().upper()
+        if priority_str in TaskPriority._value2member_map_:
             task.priority = TaskPriority(priority_str)
 
     if 'status' in data:
-        status_str = str(data.get('status', '')).strip().lower()
-        if status_str in [s.value for s in TaskStatus]:
+        status_str = str(data.get('status', '')).strip().upper()
+        if status_str in TaskStatus._value2member_map_:
             task.status = TaskStatus(status_str)
 
     if 'due_date' in data:
