@@ -82,6 +82,7 @@
     background: var(--bg-main);
     color: var(--text-main);
     transition: var(--transition);
+    box-sizing: border-box; /* <-- Вот это исправление */
 }
 
 .setting-group input:focus,
