@@ -14,7 +14,6 @@
             <div class="profile-avatar" aria-hidden="true">{{ (user.username or '?')[0]|upper }}</div>
             <div class="profile-details">
                 <p><strong>Пользователь</strong> <span id="display-username">{{ user.username }}</span></p>
-                <p><strong>Email</strong> <span id="display-email">{{ user.email }}</span></p>
                 <p class="telegram-line">
                     <strong>Telegram</strong>
                     {% if telegram_linked %}
