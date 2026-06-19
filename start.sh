@@ -1,14 +1,14 @@
 #!/bin/bash
 
-echo "🚀 Starting SmartTo-DoList..."
+echo "🚀 Запуск SmartTo-DoList..."
 
-# Activate virtual environment if not in Docker/PaaS
+# Активация виртуального окружения, если мы не в Docker/PaaS
 if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-# Run Flask application (Production)
-echo "🌐 Starting web server (Gunicorn)..."
+# Запуск Flask-приложения в фоне (Production)
+echo "🌐 Запуск веб-сервера (Gunicorn)..."
 GUNICORN_PATH="gunicorn"
 if [ -f ".venv/bin/gunicorn" ]; then
     GUNICORN_PATH=".venv/bin/gunicorn"
@@ -16,8 +16,18 @@ fi
 $GUNICORN_PATH wsgi:app --bind 0.0.0.0:${PORT:-10000} &
 APP_PID=$!
 
-# Gracefully stop all processes on Ctrl+C and SIGTERM
-trap "echo 'Gracefully stopping...'; kill $APP_PID; exit" INT TERM
+# Запуск Telegram-бота в фоне (если настроен токен)
+if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+    echo "🤖 Запуск Telegram-бота..."
+    python -m tg_bot.run &
+    BOT_PID=$!
+else
+    echo "⚠️ TELEGRAM_BOT_TOKEN не настроен, бот не запущен."
+    BOT_PID=""
+fi
 
-# Wait for the web server to finish
-wait $APP_PID
+# Корректное завершение всех процессов по Ctrl+C и SIGTERM
+trap "echo 'Gracefully stopping...'; kill $APP_PID ${BOT_PID:-}; exit" INT TERM
+
+# Ожидаем завершения любого из фоновых процессов
+wait -n $APP_PID ${BOT_PID:-}
